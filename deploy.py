@@ -10,6 +10,7 @@ import logging
 import traceback
 
 _logger = logging.getLogger('DeployDemo')
+begin_time = datetime.datetime.now()
 
 def param_check(args):
     # TODO
@@ -63,13 +64,13 @@ def __create_tenant(cursor, *,
     create_tenant_sql = f"CREATE TENANT IF NOT EXISTS {tenant_name} resource_pool_list = ('{resource_pool_name}') set ob_tcp_invited_nodes = '%';"
 
     cursor.execute(create_unit_sql)
-    _logger.info(f'unit create done: {create_unit_sql}')
+    _logger.info(f'unit create done: {create_unit_sql}, time {(datetime.datetime.now()-begin_time).total_seconds()*1000} ms')
 
     cursor.execute(create_resource_pool_sql)
-    _logger.info(f'resource pool create done: {create_unit_sql}')
+    _logger.info(f'resource pool create done: {create_resource_pool_sql}, time {(datetime.datetime.now()-begin_time).total_seconds()*1000} ms')
 
     cursor.execute(create_tenant_sql)
-    _logger.info(f'tenant create done: {create_unit_sql}')
+    _logger.info(f'tenant create done: {create_tenant_sql}, time {(datetime.datetime.now()-begin_time).total_seconds()*1000} ms')
 
 
 if __name__ == "__main__":
@@ -130,10 +131,10 @@ if __name__ == "__main__":
         cursor = db.cursor(cursor=mysql.cursors.DictCursor)
         _logger.info(f'connect to server success! host={args.ip}, port={args.mysql_port}')
 
-        bootstrap_begin = datetime.datetime.now()
+        _logger.info(f'before bootstrap {(datetime.datetime.now()-begin_time).total_seconds()*1000} ms')
+        print(f"ALTER SYSTEM BOOTSTRAP ZONE '{args.zone}' SERVER '{rootservice}'")
         cursor.execute(f"ALTER SYSTEM BOOTSTRAP ZONE '{args.zone}' SERVER '{rootservice}'")
-        bootstrap_end = datetime.datetime.now()
-        _logger.info('bootstrap success: %s ms' % ((bootstrap_end - bootstrap_begin).total_seconds() * 1000))
+        _logger.info('bootstrap success: %s ms' % ((datetime.datetime.now() - begin_time).total_seconds() * 1000))
         # checkout server status
         cursor.execute("select * from oceanbase.__all_server")
         server_status = cursor.fetchall()
