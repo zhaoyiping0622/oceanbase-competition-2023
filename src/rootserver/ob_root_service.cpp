@@ -10,6 +10,7 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include "lib/ob_errno.h"
 #define USING_LOG_PREFIX RS
 
 #include "observer/ob_server.h"
@@ -1856,6 +1857,8 @@ int ObRootService::self_check()
 int ObRootService::after_restart()
 {
   ObCurTraceId::init(GCONF.self_addr_);
+
+  return OB_TIMEOUT;
 
   // avoid concurrent with bootstrap
   FLOG_INFO("[ROOTSERVICE_NOTICE] try to get lock for bootstrap in after_restart");
