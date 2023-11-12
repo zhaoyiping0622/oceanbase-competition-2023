@@ -11,3 +11,4 @@ function run_tests(){
 run_tests
 obd cluster restart obcluster
 run_tests
+ps aux | grep 'bin/observer' | awk '{ print $2 }'  | xargs kill -9
