@@ -1428,7 +1428,7 @@ int ObService::bootstrap(const obrpc::ObBootstrapArg &arg)
     } else if (!server_empty) {
       ret = OB_ERR_SYS;
       BOOTSTRAP_LOG(WARN, "this observer is not empty", KR(ret), K(GCTX.self_addr()));
-    } else if (OB_FAIL(pre_bootstrap.prepare_bootstrap(master_rs))) {
+    } else if (OB_FAIL(pre_bootstrap.prepare_bootstrap(master_rs))) { // 15s
       BOOTSTRAP_LOG(ERROR, "failed to prepare boot strap", K(rs_list), K(ret));
     } else {
       const ObCommonRpcProxy &rpc_proxy = *gctx_.rs_rpc_proxy_;
@@ -1441,7 +1441,7 @@ int ObService::bootstrap(const obrpc::ObBootstrapArg &arg)
           rpc_timeout = max(rpc_timeout, THIS_WORKER.get_timeout_remain());
         }
         if (OB_FAIL(rpc_proxy.to_addr(master_rs).timeout(rpc_timeout)
-                    .execute_bootstrap(arg))) {
+                    .execute_bootstrap(arg))) { // 20s
           if (OB_RS_NOT_MASTER == ret) {
             BOOTSTRAP_LOG(INFO, "master root service not ready",
                           K(master_rs), "retry_count", i, K(rpc_timeout), K(ret));

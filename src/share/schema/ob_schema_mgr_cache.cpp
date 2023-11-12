@@ -19,6 +19,7 @@
 #include "common/ob_clock_generator.h"
 #include "lib/oblog/ob_log.h"
 #include "observer/omt/ob_tenant_config_mgr.h"
+#include "lib/time/ob_time_count.h"
 
 namespace oceanbase
 {
@@ -217,6 +218,7 @@ int ObSchemaMgrCache::get(const int64_t schema_version,
                           const ObSchemaMgr *&schema_mgr,
                           ObSchemaMgrHandle &handle)
 {
+  OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   schema_mgr = NULL;
   handle.reset();
@@ -238,6 +240,7 @@ int ObSchemaMgrCache::get(const int64_t schema_version,
       is_stop = true;
       last_get_schema_idx_ = latest_schema_idx_;
     }
+    LOG_INFO("zyp: ", K(max_cached_num_));
     for (int64_t i = 0; i < max_cached_num_ && next_idx < max_cached_num_ && !is_stop; ++i) {
       ObSchemaMgrItem &schema_mgr_item = schema_mgr_items_[next_idx];
       ObSchemaMgr *tmp_schema_mgr = schema_mgr_item.schema_mgr_;

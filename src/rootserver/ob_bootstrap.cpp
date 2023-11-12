@@ -56,6 +56,7 @@
 #include "share/scn.h"
 #include "rootserver/ob_heartbeat_service.h"
 #include "rootserver/ob_root_service.h"
+#include "lib/time/ob_time_count.h"
 #ifdef OB_BUILD_TDE_SECURITY
 #include "close_modules/tde_security/share/ob_master_key_getter.h"
 #endif
@@ -79,12 +80,14 @@ ObBaseBootstrap::ObBaseBootstrap(ObSrvRpcProxy &rpc_proxy,
       rs_list_(rs_list),
       config_(config)
 {
+	OB_ZYP_TIME_COUNT;
   std::sort(rs_list_.begin(), rs_list_.end());
 }
 
 int ObBaseBootstrap::gen_sys_unit_ids(const ObIArray<ObZone> &zones,
                                       ObIArray<uint64_t> &unit_ids)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObArray<ObZone> sorted_zones;
   unit_ids.reuse();
@@ -122,6 +125,7 @@ int ObBaseBootstrap::check_inner_stat() const
 int ObBaseBootstrap::check_multiple_zone_deployment_rslist(
     const ObServerInfoList &rs_list)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   //In the multi zone deployment mode,
   //each server must come from a different zone,
@@ -145,6 +149,7 @@ int ObBaseBootstrap::check_multiple_zone_deployment_rslist(
 int ObBaseBootstrap::check_bootstrap_rs_list(
     const ObServerInfoList &rs_list)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (rs_list.count() <= 0) {
     ret = OB_INVALID_ARGUMENT;
@@ -160,6 +165,7 @@ int ObBaseBootstrap::check_bootstrap_rs_list(
 
 int ObBaseBootstrap::gen_sys_unit_ids(ObIArray<uint64_t> &unit_ids)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   unit_ids.reuse();
   if (OB_FAIL(check_inner_stat())) {
@@ -176,6 +182,7 @@ int ObBaseBootstrap::gen_sys_unit_ids(ObIArray<uint64_t> &unit_ids)
 
 int ObBaseBootstrap::gen_sys_zone_list(ObIArray<ObZone> &zone_list)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   zone_list.reuse();
   if (OB_FAIL(check_inner_stat())) {
@@ -195,6 +202,7 @@ int ObBaseBootstrap::gen_sys_zone_list(ObIArray<ObZone> &zone_list)
 
 int ObBaseBootstrap::gen_sys_units(ObIArray<share::ObUnit> &units)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObArray<uint64_t> unit_ids;
   units.reuse();
@@ -233,10 +241,12 @@ ObPreBootstrap::ObPreBootstrap(ObSrvRpcProxy &rpc_proxy,
     arg_(arg),
     common_proxy_(rs_rpc_proxy)
 {
+	OB_ZYP_TIME_COUNT;
 }
 
 int ObPreBootstrap::prepare_bootstrap(ObAddr &master_rs)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   bool is_empty = false;
   bool match = false;
@@ -263,7 +273,7 @@ int ObPreBootstrap::prepare_bootstrap(ObAddr &master_rs)
     LOG_WARN("fail to notify sys tenant config", KR(ret));
   } else if (OB_FAIL(create_ls())) {
     LOG_WARN("failed to create core table partition", KR(ret));
-  } else if (OB_FAIL(wait_elect_ls(master_rs))) {
+  } else if (OB_FAIL(wait_elect_ls(master_rs))) { // 16s
     LOG_WARN("failed to wait elect master partition", KR(ret));
   }
   BOOTSTRAP_CHECK_SUCCESS();
@@ -272,6 +282,7 @@ int ObPreBootstrap::prepare_bootstrap(ObAddr &master_rs)
 
 int ObPreBootstrap::notify_sys_tenant_root_key()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
 #ifdef OB_BUILD_TDE_SECURITY
   ObArray<ObAddr> addrs;
@@ -307,6 +318,7 @@ int ObPreBootstrap::notify_sys_tenant_root_key()
 
 int ObPreBootstrap::notify_sys_tenant_server_unit_resource()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObUnitConfig unit_config;
   common::ObArray<uint64_t> sys_unit_id_array;
@@ -358,6 +370,7 @@ int ObPreBootstrap::notify_sys_tenant_server_unit_resource()
 
 int ObPreBootstrap::notify_sys_tenant_config_()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   common::ObConfigPairs config;
   common::ObSEArray<common::ObConfigPairs, 1> init_configs;
@@ -385,6 +398,7 @@ int ObPreBootstrap::notify_sys_tenant_config_()
 
 int ObPreBootstrap::create_ls()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("fail to check inner stat", KR(ret));
@@ -410,6 +424,7 @@ int ObPreBootstrap::create_ls()
 int ObPreBootstrap::wait_elect_ls(
     common::ObAddr &master_rs)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const uint64_t tenant_id = OB_SYS_TENANT_ID;
 
@@ -424,6 +439,7 @@ int ObPreBootstrap::wait_elect_ls(
       tenant_id, SYS_LS, timeout, master_rs))) {
     LOG_WARN("leader_waiter_ wait failed", K(tenant_id), K(SYS_LS), K(timeout), K(ret));
   }
+  LOG_WARN("leader_waiter_ wait finish", K(tenant_id), K(SYS_LS), K(timeout), K(ret));
   if (OB_SUCC(ret)) {
     ObTaskController::get().allow_next_syslog();
     LOG_INFO("succeed to wait elect log stream");
@@ -435,6 +451,7 @@ int ObPreBootstrap::wait_elect_ls(
 int ObPreBootstrap::check_all_server_bootstrap_mode_match(
     bool &match)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   match = true;
   Bool is_match(false);
@@ -461,6 +478,7 @@ int ObPreBootstrap::check_all_server_bootstrap_mode_match(
 
 int ObPreBootstrap::check_is_all_server_empty(bool &is_empty)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   is_empty = true;
   Bool is_server_empty;
@@ -494,6 +512,7 @@ int ObPreBootstrap::check_is_all_server_empty(bool &is_empty)
 
 bool ObBootstrap::TableIdCompare::operator() (const ObTableSchema* left, const ObTableSchema* right)
 {
+	OB_ZYP_TIME_COUNT;
   bool bret = false;
 
   if (OB_ISNULL(left) || OB_ISNULL(right)) {
@@ -544,10 +563,12 @@ ObBootstrap::ObBootstrap(
     common_proxy_(rs_rpc_proxy),
     begin_ts_(0)
 {
+	OB_ZYP_TIME_COUNT;
 }
 
 int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zone_op_service)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   bool already_bootstrap = true;
   ObSArray<ObTableSchema> table_schemas;
@@ -576,7 +597,7 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
     LOG_WARN("broadcast_sys_schemas failed", K(table_schemas), K(ret));
   } else if (OB_FAIL(create_all_partitions())) {
     LOG_WARN("create all partitions fail", K(ret));
-  } else if (OB_FAIL(create_all_schema(ddl_service_, table_schemas))) {
+  } else if (OB_FAIL(create_all_schema(ddl_service_, table_schemas))) { // 16s
     LOG_WARN("create_all_schema failed",  K(table_schemas), K(ret));
   }
   BOOTSTRAP_CHECK_SUCCESS_V2("create_all_schema");
@@ -606,6 +627,7 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
 int ObBootstrap::sort_schema(const ObIArray<ObTableSchema> &table_schemas,
                              ObIArray<ObTableSchema> &sorted_table_schemas)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObSArray<const ObTableSchema*> ptr_table_schemas;
   if (table_schemas.count() <= 0) {
@@ -638,6 +660,7 @@ int ObBootstrap::generate_table_schema_array_for_create_partition(
     const share::schema::ObTableSchema &tschema,
     common::ObIArray<share::schema::ObTableSchema> &table_schema_array)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   table_schema_array.reset();
   const uint64_t table_id = tschema.get_table_id();
@@ -658,6 +681,7 @@ int ObBootstrap::prepare_create_partition(
     ObTableCreator &creator,
     const share::schema_create_func func)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObArray<ObUnit> units;
   const bool set_primary_zone = false;
@@ -714,6 +738,7 @@ int ObBootstrap::prepare_create_partition(
 
 int ObBootstrap::create_all_core_table_partition()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
 
   if (OB_FAIL(check_inner_stat())) {
@@ -760,6 +785,7 @@ int ObBootstrap::create_all_core_table_partition()
 
 int ObBootstrap::create_all_partitions()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObArray<uint64_t> sys_table_ids;
   ObArray<int64_t> partition_nums;
@@ -817,6 +843,7 @@ int ObBootstrap::add_sys_table_lob_aux_table(
     uint64_t data_table_id,
     ObIArray<ObTableSchema> &table_schemas)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (is_system_table(data_table_id)) {
     HEAP_VARS_2((ObTableSchema, lob_meta_schema), (ObTableSchema, lob_piece_schema)) {
@@ -836,6 +863,7 @@ int ObBootstrap::add_sys_table_lob_aux_table(
 
 int ObBootstrap::construct_all_schema(ObIArray<ObTableSchema> &table_schemas)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const schema_create_func *creator_ptr_arrays[] = {
     core_table_schema_creators,
@@ -895,6 +923,7 @@ int ObBootstrap::construct_all_schema(ObIArray<ObTableSchema> &table_schemas)
 
 int ObBootstrap::broadcast_sys_schema(const ObSArray<ObTableSchema> &table_schemas)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   obrpc::ObBatchBroadcastSchemaArg arg;
   obrpc::ObBatchBroadcastSchemaResult result;
@@ -944,6 +973,7 @@ int ObBootstrap::broadcast_sys_schema(const ObSArray<ObTableSchema> &table_schem
 int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
                                    ObIArray<ObTableSchema> &table_schemas)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const int64_t begin_time = ObTimeUtility::current_time();
   LOG_INFO("start create all schemas", "table count", table_schemas.count());
@@ -952,6 +982,7 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
     LOG_WARN("table_schemas is empty", K(table_schemas), K(ret));
   } else {
     // persist __all_core_table's schema in inner table, which is only used for sys views.
+    OB_ZYP_TIME_COUNT_BEGIN(HEAP_VAR_core_table);
     HEAP_VAR(ObTableSchema, core_table) {
        ObArray<ObTableSchema> tmp_tables;
       if (OB_FAIL(ObInnerTableSchema::all_core_table_schema(core_table))) {
@@ -962,7 +993,9 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
         LOG_WARN("fail to create __all_core_table's schema", KR(ret), K(core_table));
       }
     }
+    OB_ZYP_TIME_COUNT_END(HEAP_VAR_core_table);
 
+    OB_ZYP_TIME_COUNT_BEGIN(batch_create_schema); // 1s
     int64_t begin = 0;
     int64_t batch_count = BATCH_INSERT_SCHEMA_CNT;
     const int64_t MAX_RETRY_TIMES = 3;
@@ -990,6 +1023,7 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
         }
       }
     }
+    OB_ZYP_TIME_COUNT_END(batch_create_schema);
   }
   LOG_INFO("end create all schemas", K(ret), "table count", table_schemas.count(),
            "time_used", ObTimeUtility::current_time() - begin_time);
@@ -1000,6 +1034,7 @@ int ObBootstrap::batch_create_schema(ObDDLService &ddl_service,
                                      ObIArray<ObTableSchema> &table_schemas,
                                      const int64_t begin, const int64_t end)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const int64_t begin_time = ObTimeUtility::current_time();
   ObDDLSQLTransaction trans(&(ddl_service.get_schema_service()), true, true, false, false);
@@ -1059,6 +1094,7 @@ int ObBootstrap::batch_create_schema(ObDDLService &ddl_service,
 int ObBootstrap::construct_schema(
     const share::schema_create_func func, ObTableSchema &tschema)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   BOOTSTRAP_CHECK_SUCCESS_V2("before construct schema");
   if (OB_FAIL(check_inner_stat())) {
@@ -1110,6 +1146,7 @@ int ObBootstrap::add_servers_in_rs_list(rootserver::ObServerZoneOpService &serve
 
 int ObBootstrap::wait_all_rs_in_service()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const int64_t check_interval = 500 * 1000;
   int64_t left_time_can_sleep = WAIT_RS_IN_SERVICE_TIMEOUT_US;
@@ -1163,6 +1200,7 @@ int ObBootstrap::wait_all_rs_in_service()
 
 int ObBootstrap::check_is_already_bootstrap(bool &is_bootstrap)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   int64_t schema_version = OB_INVALID_VERSION;
   is_bootstrap = true;
@@ -1189,6 +1227,7 @@ int ObBootstrap::check_is_already_bootstrap(bool &is_bootstrap)
 
 int ObBootstrap::init_global_stat()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObMySQLProxy &sql_proxy = ddl_service_.get_sql_proxy();
   ObMySQLTransaction trans;
@@ -1238,6 +1277,7 @@ int ObBootstrap::init_global_stat()
 
 int ObBootstrap::init_sequence_id()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const int64_t rootservice_epoch = 0;
   ObMultiVersionSchemaService &multi_schema_service = ddl_service_.get_schema_service();
@@ -1256,6 +1296,7 @@ int ObBootstrap::init_sequence_id()
 int ObBootstrap::gen_multiple_zone_deployment_sys_tenant_locality_str(
     share::schema::ObTenantSchema &tenant_schema)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(rs_list_.count() <= 0)) {
     ret = OB_ERR_UNEXPECTED;
@@ -1285,6 +1326,7 @@ int ObBootstrap::gen_multiple_zone_deployment_sys_tenant_locality_str(
 int ObBootstrap::gen_sys_tenant_locality_str(
     share::schema::ObTenantSchema &tenant_schema)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("check inner stat failed", K(ret));
@@ -1298,6 +1340,7 @@ int ObBootstrap::gen_sys_tenant_locality_str(
 
 int ObBootstrap::create_sys_tenant()
 {
+	OB_ZYP_TIME_COUNT;
   // insert zero system stat value for create system tenant.
   int ret= OB_SUCCESS;
   ObTenantSchema tenant;
@@ -1364,6 +1407,7 @@ int ObBootstrap::create_sys_tenant()
 int ObBootstrap::insert_sys_ls_(const share::schema::ObTenantSchema &tenant_schema,
     const ObIArray<ObZone> &zone_list)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObZone primary_zone;
   ObSqlString primary_zone_str;
@@ -1419,6 +1463,7 @@ int ObBootstrap::insert_sys_ls_(const share::schema::ObTenantSchema &tenant_sche
 
 int ObBootstrap::init_system_data()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("check_inner_stat failed", KR(ret));
@@ -1439,6 +1484,7 @@ int ObBootstrap::init_system_data()
 
 int ObBootstrap::init_sys_unit_config(share::ObUnitConfig &unit_config)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const bool is_hidden_sys = false;
 
@@ -1455,6 +1501,7 @@ int ObBootstrap::init_sys_unit_config(share::ObUnitConfig &unit_config)
 
 int ObBootstrap::create_sys_unit_config()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObUnitConfig unit_config;
   const bool if_not_exist = true;
@@ -1472,6 +1519,7 @@ int ObBootstrap::create_sys_unit_config()
 int ObBootstrap::gen_sys_resource_pool(
     share::ObResourcePool &pool)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   pool.resource_pool_id_ = OB_SYS_RESOURCE_POOL_ID;
   pool.name_ = "sys_pool";
@@ -1486,6 +1534,7 @@ int ObBootstrap::gen_sys_resource_pool(
 
 int ObBootstrap::create_sys_resource_pool()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   ObArray<ObUnit> sys_units;
   ObArray<ObResourcePoolName> pool_names;
@@ -1536,6 +1585,7 @@ int ObBootstrap::create_sys_resource_pool()
 int ObBootstrap::init_multiple_zone_deployment_table(
     common::ObISQLClient &sql_client)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   HEAP_VAR(ObZoneInfo, zone_info) {
     for (int64_t i = 0; OB_SUCC(ret) && i < rs_list_.count(); ++i) {
@@ -1578,6 +1628,7 @@ int ObBootstrap::init_multiple_zone_deployment_table(
 
 int ObBootstrap::init_all_zone_table()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   common::ObMySQLTransaction trans;
   ObMySQLProxy &sql_proxy = ddl_service_.get_sql_proxy();
@@ -1611,6 +1662,7 @@ int ObBootstrap::init_all_zone_table()
 template<typename SCHEMA>
 int ObBootstrap::set_replica_options(SCHEMA &schema)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   BOOTSTRAP_CHECK_SUCCESS_V2("before set replica options");
   ObArray<ObZone> zone_list;
@@ -1648,6 +1700,7 @@ int ObBootstrap::set_replica_options(SCHEMA &schema)
 int ObBootstrap::build_zone_region_list(
     ObIArray<share::schema::ObZoneRegion> &zone_region_list)
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   zone_region_list.reset();
   for (int64_t i = 0; i < rs_list_.count() && OB_SUCC(ret); ++i) {
@@ -1663,6 +1716,7 @@ int ObBootstrap::build_zone_region_list(
 
 int ObBootstrap::set_in_bootstrap()
 {
+	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("failed to check inner stat error", K(ret));
