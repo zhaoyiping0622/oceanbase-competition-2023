@@ -1,6 +1,47 @@
 #!/bin/bash -x
 
-record_time=40
+POSITIONAL_ARGS=()
+KILL=1
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --no-kill)
+      KILL=0
+      shift
+      ;;
+    # -e|--extension)
+    #   EXTENSION="$2"
+    #   shift # past argument
+    #   shift # past value
+    #   ;;
+    # -s|--searchpath)
+    #   SEARCHPATH="$2"
+    #   shift # past argument
+    #   shift # past value
+    #   ;;
+    # --default)
+    #   DEFAULT=YES
+    #   shift # past argument
+    #   ;;
+    # -*|--*)
+    #   echo "Unknown option $1"
+    #   exit 1
+    #   ;;
+    *)
+      echo unknown args $1
+      exit 1
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+
+record_time=80
+
+base_dir=/home/zhaoyiping/ob-deploy/
 
 function gen_flame_graph() {
   /home/zhaoyiping/FlameGraph/flamegraph.pl --height 32 --title $1 svg/$1.stack > svg/$1.svg
@@ -13,11 +54,11 @@ function gen_flame_graph_reverse() {
 ps a | grep 'python3 deploy.py' | grep -v grep | awk '{ print $1 }' | xargs kill -9
 ps a | grep '/usr/share/bcc/tools/profile' | grep -v grep | awk '{ print $1 }' | xargs kill -9
 ps a | grep '/usr/share/bcc/tools/offcputime' | grep -v grep | awk '{ print $1 }' | xargs kill -9
-python3 deploy.py --cluster-home-path /home/zhaoyiping/oceanbase/tools/deploy/ --clean
-python3 deploy.py --cluster-home-path /home/zhaoyiping/oceanbase/tools/deploy/ &
+python3 deploy.py --cluster-home-path $base_dir --clean
+python3 deploy.py --cluster-home-path $base_dir &
 python_pid=$!
 sleep 1
-ob_pid=`ps aux | grep "oceanbase/tools/deploy/bin/observer" | grep -v grep | awk '{ print $2 }'`
+ob_pid=`ps aux | grep "bin/observer" | grep -v grep | awk '{ print $2 }'`
 /usr/share/bcc/tools/profile -p $ob_pid -f -F 99 $record_time > svg/profile.stack &
 profile_pid=$!
 /usr/share/bcc/tools/offcputime -p $ob_pid -f $record_time -U > svg/offcputime.stack &
@@ -32,4 +73,6 @@ gen_flame_graph offwaketime
 gen_flame_graph profile
 gen_flame_graph offcputime 
 gen_flame_graph_reverse offcputime 
-kill -9 $ob_pid
+if [[ $KILL -eq 1 ]];then
+  kill -9 $ob_pid
+fi

@@ -1854,11 +1854,16 @@ int ObRootService::self_check()
   return ret;
 }
 
+bool after_restart_flag=false;
+
 int ObRootService::after_restart()
 {
   ObCurTraceId::init(GCONF.self_addr_);
 
-  return OB_TIMEOUT;
+  if(after_restart_flag) {
+    after_restart_flag = false;
+    return OB_TIMEOUT;
+  }
 
   // avoid concurrent with bootstrap
   FLOG_INFO("[ROOTSERVICE_NOTICE] try to get lock for bootstrap in after_restart");

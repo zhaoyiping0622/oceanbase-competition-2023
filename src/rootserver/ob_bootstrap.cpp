@@ -72,6 +72,8 @@ using namespace storage;
 namespace rootserver
 {
 
+extern bool after_restart_flag;
+
 ObBaseBootstrap::ObBaseBootstrap(ObSrvRpcProxy &rpc_proxy,
                                  const ObServerInfoList &rs_list,
                                  common::ObServerConfig &config)
@@ -241,6 +243,7 @@ ObPreBootstrap::ObPreBootstrap(ObSrvRpcProxy &rpc_proxy,
     arg_(arg),
     common_proxy_(rs_rpc_proxy)
 {
+  after_restart_flag = true;
 	OB_ZYP_TIME_COUNT;
 }
 
@@ -545,7 +548,6 @@ bool ObBootstrap::TableIdCompare::operator() (const ObTableSchema* left, const O
   }
   return bret;
 }
-
 
 ObBootstrap::ObBootstrap(
     ObSrvRpcProxy &rpc_proxy,
