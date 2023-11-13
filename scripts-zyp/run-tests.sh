@@ -8,6 +8,10 @@ function run_tests(){
   obd test tpch obcluster --tenant=test --database=test --remote-tbl-dir=/data/obcluster/tbl --scale-factor=1 --optimization=0
 }
 
+pushd $HOME/.obd/plugins
+for file in `find . -name "analyze.sql"`; do echo "" > $file; done
+popd
+
 run_tests
 obd cluster restart obcluster
 run_tests

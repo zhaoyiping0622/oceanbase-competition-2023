@@ -3,30 +3,19 @@
 POSITIONAL_ARGS=()
 KILL=1
 
+record_time=60
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     --no-kill)
       KILL=0
       shift
       ;;
-    # -e|--extension)
-    #   EXTENSION="$2"
-    #   shift # past argument
-    #   shift # past value
-    #   ;;
-    # -s|--searchpath)
-    #   SEARCHPATH="$2"
-    #   shift # past argument
-    #   shift # past value
-    #   ;;
-    # --default)
-    #   DEFAULT=YES
-    #   shift # past argument
-    #   ;;
-    # -*|--*)
-    #   echo "Unknown option $1"
-    #   exit 1
-    #   ;;
+    -t|--record_time)
+      record_time=$2
+      shift
+      shift
+      ;;
     *)
       echo unknown args $1
       exit 1
@@ -37,9 +26,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
-
-
-record_time=80
 
 base_dir=/home/zhaoyiping/ob-deploy/
 
@@ -63,7 +49,7 @@ ob_pid=`ps aux | grep "bin/observer" | grep -v grep | awk '{ print $2 }'`
 profile_pid=$!
 /usr/share/bcc/tools/offcputime -p $ob_pid -f $record_time -U > svg/offcputime.stack &
 offcputime_pid=$!
-/usr/share/bcc/tools/offwaketime -f -p $ob_pid $record_time > svg/offwaketime.stack &
+/usr/share/bcc/tools/offwaketime -m 1000000 -p $ob_pid $record_time > svg/offwaketime.stack &
 offwaketime_pid=$!
 wait $python_pid
 wait $profile_pid
