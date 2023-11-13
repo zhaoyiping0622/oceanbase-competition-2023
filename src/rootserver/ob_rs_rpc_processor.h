@@ -110,6 +110,7 @@ protected:
     if (root_service_.in_service()) {
       if (full_service_ && !root_service_.is_full_service()) {
         ret = OB_SERVER_IS_INIT;
+        // FIXME(zhaoyiping): 这里可能有问题 
         RS_LOG(WARN, "RS is initializing, can not process this request",
             K(ret), K(full_service_), K(root_service_.is_full_service()), K(pcode));
       } else if (major_freeze_done_ && !root_service_.is_major_freeze_done()) {
