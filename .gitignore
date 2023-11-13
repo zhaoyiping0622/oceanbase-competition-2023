@@ -345,3 +345,6 @@ deps/3rd
 ############# test #############
 test/tmp
 test/var
+
+############# zhaoyiping #############
+svg/
