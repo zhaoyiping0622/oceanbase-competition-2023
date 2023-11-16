@@ -505,10 +505,10 @@ void zyp_init_etc(const char* root) {
   zyp_init_etc_write("etc/observer.config.bin.history", etc_ob_config_his, (long)_sizeof_etc_ob_config_his);
 
   zyp_init_etc_write("etc2/observer.conf.bin", etc2_ob_config, (long)_sizeof_etc2_ob_config);
-  zyp_init_etc_write("etc2/observer.config.bin.history", etc2_ob_config_his, (long)_sizeof_etc2_ob_config_his);
+  zyp_init_etc_write("etc2/observer.conf.bin.history", etc2_ob_config_his, (long)_sizeof_etc2_ob_config_his);
 
   zyp_init_etc_write("etc3/observer.conf.bin", etc3_ob_config, (long)_sizeof_etc3_ob_config);
-  zyp_init_etc_write("etc3/observer.config.bin.history", etc3_ob_config_his, (long)_sizeof_etc3_ob_config_his);
+  zyp_init_etc_write("etc3/observer.conf.bin.history", etc3_ob_config_his, (long)_sizeof_etc3_ob_config_his);
 }
 
 void zyp_init(const char* root){
