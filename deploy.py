@@ -35,7 +35,7 @@ def __clear_env(cluster_home_path:str) -> None:
     if pid:
         subprocess.run(f'kill -9 {pid}', shell=True)
 
-    paths_to_clear = ['audit', 'etc', 'etc2', 'etc3', 'log', 'run', __data_path(cluster_home_path)]
+    paths_to_clear = ['audit', 'etc', 'etc2', 'etc3', 'log', 'run']
     for path in paths_to_clear:
         path_to_clear = os.path.join(cluster_home_path, path)
         shutil.rmtree(path_to_clear, ignore_errors=True)
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", dest="cluster_id", type=str, default="1")
     parser.add_argument("-i", dest="devname", type=str, default="lo")
     parser.add_argument("-I", dest="ip", type=str, default="127.0.0.1")
-    parser.add_argument("-o", dest="opt_str", type=str, default="__min_full_resource_pool_memory=1073741824,datafile_size=30G,datafile_next=10G,datafile_maxsize=50G,log_disk_size=40G,memory_limit=10G,system_memory=1G,cpu_count=24,cache_wash_threshold=1G,workers_per_cpu_quota=10,schema_history_expire_time=1d,net_thread_count=4,syslog_io_bandwidth_limit=10G")
+    parser.add_argument("-o", dest="opt_str", type=str, default="__min_full_resource_pool_memory=1073741824,datafile_size=10G,datafile_next=10G,datafile_maxsize=20G,log_disk_size=40G,memory_limit=10G,system_memory=1G,cpu_count=24,cache_wash_threshold=1G,workers_per_cpu_quota=10,schema_history_expire_time=1d,net_thread_count=4,syslog_io_bandwidth_limit=10G")
 
     tenant_group = parser.add_argument_group('tenant', 'tenant options')
     tenant_group.add_argument('--tenant-name', dest='tenant_name', type=str, default='test')
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     shell_result = subprocess.run(observer_cmd, shell=True)
     _logger.info('deploy done. returncode=%d', shell_result.returncode)
 
-    time.sleep(2)
+    time.sleep(8)
     try:
         db = __try_to_connect(args.ip, int(args.mysql_port))
         cursor = db.cursor(cursor=mysql.cursors.DictCursor)
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
         _logger.info(f'before bootstrap {(datetime.datetime.now()-begin_time).total_seconds()*1000} ms')
         print(f"ALTER SYSTEM BOOTSTRAP ZONE '{args.zone}' SERVER '{rootservice}'")
-        cursor.execute(f"ALTER SYSTEM BOOTSTRAP ZONE '{args.zone}' SERVER '{rootservice}'")
+        # cursor.execute(f"ALTER SYSTEM BOOTSTRAP ZONE '{args.zone}' SERVER '{rootservice}'")
         _logger.info('bootstrap success: %s ms' % ((datetime.datetime.now() - begin_time).total_seconds() * 1000))
         # checkout server status
         cursor.execute("select * from oceanbase.__all_server")
@@ -144,13 +144,13 @@ if __name__ == "__main__":
         _logger.info('checkout server status ok')
         # ObRootService::check_config_result
 
-        __create_tenant(cursor,
-                        cpu=args.tenant_cpu,
-                        memory_size=args.tenant_memory,
-                        unit_name=args.tenant_unit_name,
-                        resource_pool_name=args.tenant_resource_pool_name,
-                        zone_name=args.zone,
-                        tenant_name=args.tenant_name)
+        # __create_tenant(cursor,
+        #                 cpu=args.tenant_cpu,
+        #                 memory_size=args.tenant_memory,
+        #                 unit_name=args.tenant_unit_name,
+        #                 resource_pool_name=args.tenant_resource_pool_name,
+        #                 zone_name=args.zone,
+        #                 tenant_name=args.tenant_name)
         _logger.info('create tenant done')
 
     except mysql.err.Error as e:

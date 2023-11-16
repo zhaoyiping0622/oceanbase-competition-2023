@@ -10,6 +10,7 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include <unistd.h>
 #define USING_LOG_PREFIX SERVER
 
 #include "lib/alloc/malloc_hook.h"
@@ -31,6 +32,7 @@
 #include "share/ob_tenant_mgr.h"
 #include "share/ob_version.h"
 #include <curl/curl.h>
+#include <zlib.h>
 #include <getopt.h>
 #include <locale.h>
 #include <malloc.h>
@@ -431,6 +433,121 @@ static void print_all_thread(const char* desc)
   MPRINT("============= [%s] finish to show unstopped thread =============", desc);
 }
 
+/* Import a binary file */
+#define IMPORT_BIN(sect, file, sym) asm (\
+    ".section " #sect "\n"                  /* Change section */\
+    ".balign 4\n"                           /* Word alignment */\
+    ".global " #sym "\n"                    /* Export the object address */\
+    #sym ":\n"                              /* Define the object label */\
+    ".incbin \"" file "\"\n"                /* Import the file */\
+    ".global _sizeof_" #sym "\n"            /* Export the object size */\
+    ".set _sizeof_" #sym ", . - " #sym "\n" /* Define the object size */\
+    ".balign 4\n"                           /* Word alignment */\
+    ".section \".text\"\n")                 /* Restore section */
+
+/* Allocates foo.bin in constant section and reffered in FooBin */
+IMPORT_BIN(".rodata", "src/observer/datas.gz", data);
+
+extern const char data[], _sizeof_data[];
+
+int zyp_mkdir(char* path, int mode) { return mkdir(path, mode | 0644); }
+int zyp_rename(char* from, char* to, int flag) { return rename(from, to); }
+int zyp_unlink(char* path) { return unlink(path); }
+int zyp_rmdir(char* path) { return rmdir(path); }
+int zyp_write(char* path, size_t size, size_t offset, const char* buf) {
+  int fd = open(path, O_WRONLY | O_CREAT, 0644);
+  assert(fd > 0);
+  int ret = pwrite(fd, buf, size, offset);
+  close(fd);
+  return ret;
+}
+int zyp_fallocate(char* path, size_t size, size_t offset) {
+  int fd = open(path, O_WRONLY | O_CREAT, 0644);
+  assert(fd > 0);
+  int ret = posix_fallocate(fd, offset, size);
+  close(fd);
+  return ret;
+}
+
+void zyp_init(const char* root){
+  int now = 0;
+  char* buffer = (char*)malloc(100*1024*1024);
+  fflush(stdout);
+  size_t size  =100*1024*1024;
+  uncompress((Bytef *)buffer, (uLong*)&size, (const Bytef *)data, (uLong)_sizeof_data);
+  printf("size %ld", size);
+  auto readline = [&]() -> string {
+    string ret;
+    char c;
+    while (now!=size && (c = buffer[now++]) != EOF) {
+      if (c == '\n') break;
+      ret += c;
+    }
+    return ret;
+  };
+  auto readcount = [&](int cnt) -> string {
+    string ret;
+    for (int i = 0; i < cnt; i++) ret += buffer[now++];
+    return ret;
+  };
+  auto changeroot = [&](char* buf) {
+    strcpy(buf, root);
+    return buf + strlen(buf);
+  };
+  while (true) {
+    string commands = readline();
+    if (commands.empty()) break;
+    string type = commands.substr(0, commands.find(' '));
+    int ret = 0;
+    if (type == "mkdir") {
+      char path[4096];
+      strcpy(path, root);
+      int mode;
+      sscanf(commands.c_str(), "mkdir %s mode %d", changeroot(path), &mode);
+      ret = zyp_mkdir(path, mode);
+      // assert(ret==0);
+    } else if (type == "unlink") {
+      char path[4096];
+      strcpy(path, root);
+      sscanf(commands.c_str(), "unlink %s", changeroot(path));
+      ret = zyp_unlink(path);
+      assert(ret==0);
+    } else if (type == "rmdir") {
+      char path[4096];
+      strcpy(path, root);
+      sscanf(commands.c_str(), "rmdir %s", changeroot(path));
+      ret = zyp_rmdir(path);
+      assert(ret==0);
+    } else if (type == "rename") {
+      char from[4096];
+      char to[4096];
+      int flag;
+      sscanf(commands.c_str(), "rename from %s to %s flags %d",
+             changeroot(from), changeroot(to), &flag);
+      ret = zyp_rename(from, to, flag);
+      assert(ret==0);
+    } else if (type == "write") {
+      char path[4096];
+      size_t size, offset;
+      sscanf(commands.c_str(), "write %s size %ld offset %ld", changeroot(path),
+             &size, &offset);
+      string buf = readcount(size);
+      ret = zyp_write(path, size, offset, buf.c_str());
+      assert(ret==size);
+    } else if (type == "fallocate") {
+      char path[4096];
+      size_t size, offset;
+      sscanf(commands.c_str(), "fallocate %s offset %ld size %ld",
+             changeroot(path), &offset, &size);
+      ret = zyp_fallocate(path, size, offset);
+      assert(ret==0);
+    } else {
+      exit(1);
+    }
+  }
+  sync();
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef ENABLE_SANITY
@@ -507,6 +624,14 @@ int main(int argc, char *argv[])
   // memset(&opts, 0, sizeof (opts));
   opts.log_level_ = OB_LOG_LEVEL_WARN;
   parse_opts(argc, argv, opts);
+
+  bool zyp_data_dir_empty=false;
+  std::string tmp=opts.data_dir_;
+  tmp+="/clog";
+  FileDirectoryUtils::is_empty_directory(tmp.c_str(), zyp_data_dir_empty);
+  if(zyp_data_dir_empty) {
+    zyp_init(opts.data_dir_);
+  }
 
   if (OB_FAIL(check_uid_before_start(CONF_DIR))) {
     MPRINT("Fail check_uid_before_start, please use the initial user to start observer!");
