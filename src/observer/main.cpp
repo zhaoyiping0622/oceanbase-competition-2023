@@ -497,28 +497,28 @@ void zyp_init_etc(const char* root) {
   strcpy(path, root);
   int tail=strlen(path);
 
-  strcpy(path+tail, "/../etc");
+  strcpy(path+tail, "etc");
   mkdir(path, 0644);
-  strcpy(path+tail, "/../etc2");
+  strcpy(path+tail, "etc2");
   printf("%s\n", path);
   mkdir(path, 0644);
-  strcpy(path+tail, "/../etc3");
+  strcpy(path+tail, "etc3");
   printf("%s\n", path);
   mkdir(path, 0644);
 
-  strcpy(path+tail, "/../etc/observer.config.bin");
+  strcpy(path+tail, "etc/observer.config.bin");
   zyp_init_etc_write(path, etc_ob_config, (long)_sizeof_etc_ob_config);
-  strcpy(path+tail, "/../etc/observer.config.bin.history");
+  strcpy(path+tail, "etc/observer.config.bin.history");
   zyp_init_etc_write(path, etc_ob_config_his, (long)_sizeof_etc_ob_config_his);
 
-  strcpy(path+tail, "/../etc2/observer.conf.bin");
+  strcpy(path+tail, "etc2/observer.conf.bin");
   zyp_init_etc_write(path, etc2_ob_config, (long)_sizeof_etc2_ob_config);
-  strcpy(path+tail, "/../etc2/observer.config.bin.history");
+  strcpy(path+tail, "etc2/observer.config.bin.history");
   zyp_init_etc_write(path, etc2_ob_config_his, (long)_sizeof_etc2_ob_config_his);
 
-  strcpy(path+tail, "/../etc3/observer.conf.bin");
+  strcpy(path+tail, "etc3/observer.conf.bin");
   zyp_init_etc_write(path, etc3_ob_config, (long)_sizeof_etc3_ob_config);
-  strcpy(path+tail, "/../etc3/observer.config.bin.history");
+  strcpy(path+tail, "etc3/observer.config.bin.history");
   zyp_init_etc_write(path, etc3_ob_config_his, (long)_sizeof_etc3_ob_config_his);
 }
 
