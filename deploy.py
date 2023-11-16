@@ -154,6 +154,8 @@ if __name__ == "__main__":
         _logger.info('create tenant done')
 
     except mysql.err.Error as e:
+        with open(f"{data_abs_path}/../log/observer.log.wf", "r") as f:
+            print("".join(f.readlines()))
         _logger.info("deploy observer failed. ex=%s", str(e))
         _logger.info(traceback.format_exc())
         exit(1)
