@@ -10,7 +10,10 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include <sys/stat.h>
 #include <unistd.h>
+#include <cstdio>
+#include <cstring>
 #define USING_LOG_PREFIX SERVER
 
 #include "lib/alloc/malloc_hook.h"
@@ -469,7 +472,58 @@ int zyp_fallocate(char* path, size_t size, size_t offset) {
   return ret;
 }
 
+IMPORT_BIN(".rodata", "src/observer/etc/observer.config.bin", etc_ob_config);
+IMPORT_BIN(".rodata", "src/observer/etc/observer.config.bin.history", etc_ob_config_his);
+IMPORT_BIN(".rodata", "src/observer/etc2/observer.conf.bin", etc2_ob_config);
+IMPORT_BIN(".rodata", "src/observer/etc2/observer.conf.bin.history", etc2_ob_config_his);
+IMPORT_BIN(".rodata", "src/observer/etc3/observer.conf.bin", etc3_ob_config);
+IMPORT_BIN(".rodata", "src/observer/etc3/observer.conf.bin.history", etc3_ob_config_his);
+
+extern const char etc_ob_config[], _sizeof_etc_ob_config[];
+extern const char etc_ob_config_his[], _sizeof_etc_ob_config_his[];
+extern const char etc2_ob_config[], _sizeof_etc2_ob_config[];
+extern const char etc2_ob_config_his[], _sizeof_etc2_ob_config_his[];
+extern const char etc3_ob_config[], _sizeof_etc3_ob_config[];
+extern const char etc3_ob_config_his[], _sizeof_etc3_ob_config_his[];
+
+void zyp_init_etc_write(const char* path, const char* data, size_t size) {
+  int fd = open(path, O_WRONLY|O_CREAT, 0644);
+  write(fd, data, size);
+  close(fd);
+}
+
+void zyp_init_etc(const char* root) {
+  char path[4096];
+  strcpy(path, root);
+  int tail=strlen(path);
+
+  strcpy(path+tail, "/../etc");
+  mkdir(path, 0644);
+  strcpy(path+tail, "/../etc2");
+  printf("%s\n", path);
+  mkdir(path, 0644);
+  strcpy(path+tail, "/../etc3");
+  printf("%s\n", path);
+  mkdir(path, 0644);
+
+  strcpy(path+tail, "/../etc/observer.config.bin");
+  zyp_init_etc_write(path, etc_ob_config, (long)_sizeof_etc_ob_config);
+  strcpy(path+tail, "/../etc/observer.config.bin.history");
+  zyp_init_etc_write(path, etc_ob_config_his, (long)_sizeof_etc_ob_config_his);
+
+  strcpy(path+tail, "/../etc2/observer.conf.bin");
+  zyp_init_etc_write(path, etc2_ob_config, (long)_sizeof_etc2_ob_config);
+  strcpy(path+tail, "/../etc2/observer.config.bin.history");
+  zyp_init_etc_write(path, etc2_ob_config_his, (long)_sizeof_etc2_ob_config_his);
+
+  strcpy(path+tail, "/../etc3/observer.conf.bin");
+  zyp_init_etc_write(path, etc3_ob_config, (long)_sizeof_etc3_ob_config);
+  strcpy(path+tail, "/../etc3/observer.config.bin.history");
+  zyp_init_etc_write(path, etc3_ob_config_his, (long)_sizeof_etc3_ob_config_his);
+}
+
 void zyp_init(const char* root){
+  zyp_init_etc(root);
   int now = 0;
   char* buffer = (char*)malloc(100*1024*1024);
   fflush(stdout);
