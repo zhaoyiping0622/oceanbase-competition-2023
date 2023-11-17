@@ -600,12 +600,15 @@ void zyp_init(const char* root){
   }
   sync();
 }
-
+std::string zyp_tmp;
 bool zyp_init_check(const char* data_dir){
+  if(data_dir == nullptr) {
+    return true;
+  }
   bool zyp_data_dir_empty=false;
-  std::string tmp=data_dir;
-  tmp+="/clog";
-  FileDirectoryUtils::is_empty_directory(tmp.c_str(), zyp_data_dir_empty);
+  zyp_tmp=data_dir;
+  zyp_tmp+="/clog";
+  FileDirectoryUtils::is_empty_directory(zyp_tmp.c_str(), zyp_data_dir_empty);
   if(zyp_data_dir_empty) {
     zyp_init(data_dir);
   }
