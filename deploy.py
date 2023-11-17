@@ -82,17 +82,22 @@ if __name__ == "__main__":
     logging.basicConfig(format=log_format, level=log_level, datefmt=log_date_format, stream=sys.stdout)
 
     parser = argparse.ArgumentParser()
+    # 这些都是无关参数
     parser.add_argument("--cluster-home-path", dest='cluster_home_path', type=str, help="the path of sys log / config file / sql.sock / audit info")
     parser.add_argument("--only_build_env", action='store_true', help="build env & start observer without bootstrap and basic check")
     parser.add_argument('--clean', action='store_true', help='clean deploy directory and exit')
+    # 这个可能要改一下etc文件 具体对实际数据的影响需要分析一下 
     parser.add_argument("-p", dest="mysql_port", type=str, default="2881")
     parser.add_argument("-P", dest="rpc_port", type=str, default="2882")
+    # 这一条要细细研究
     parser.add_argument("-z", dest="zone", type=str, default="zone1")
     parser.add_argument("-c", dest="cluster_id", type=str, default="1")
     parser.add_argument("-i", dest="devname", type=str, default="lo")
     parser.add_argument("-I", dest="ip", type=str, default="127.0.0.1")
+    # 这个应该是重点，看上去是控制文件大小的，研究一下
     parser.add_argument("-o", dest="opt_str", type=str, default="__min_full_resource_pool_memory=1073741824,datafile_size=10G,datafile_next=10G,datafile_maxsize=20G,log_disk_size=40G,memory_limit=10G,system_memory=1G,cpu_count=24,cache_wash_threshold=1G,workers_per_cpu_quota=10,schema_history_expire_time=1d,net_thread_count=4,syslog_io_bandwidth_limit=10G")
 
+    # 下面的是第二条SQL的，需要研究一下二进制文件的变化
     tenant_group = parser.add_argument_group('tenant', 'tenant options')
     tenant_group.add_argument('--tenant-name', dest='tenant_name', type=str, default='test')
     tenant_group.add_argument('--tenant-resource-pool-name', dest='tenant_resource_pool_name', type=str, default='test_pool')
