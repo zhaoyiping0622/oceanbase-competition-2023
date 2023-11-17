@@ -487,19 +487,26 @@ extern const char etc3_ob_config[], _sizeof_etc3_ob_config[];
 extern const char etc3_ob_config_his[], _sizeof_etc3_ob_config_his[];
 
 void zyp_init_etc_write(const char* path, const char* data, size_t size) {
-  int fd = open(path, O_WRONLY|O_CREAT, 0644);
-  write(fd, data, size);
+  int fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644);
+  if(fd<=0) {
+    char buf[128];
+    sprintf(buf, "failed to open %s", path);
+    perror(buf);
+    return;
+  }
+  int w = write(fd, data, size);
+  if(w!=size) {
+    char buf[128];
+    sprintf(buf, "failed to write %s size %ld write %d", path, size, w);
+    perror(buf);
+  }
   close(fd);
 }
 
 void zyp_init_etc(const char* root) {
-  char path[4096];
-  strcpy(path, root);
-  int tail=strlen(path);
-
-  mkdir("etc", 0644);
-  mkdir("etc2", 0644);
-  mkdir("etc3", 0644);
+  if(mkdir("etc", 0644)) perror("failed to mkdir etc");
+  if(mkdir("etc2", 0644)) perror("failed to mkdir etc2");
+  if(mkdir("etc3", 0644)) perror("failed to mkdir etc3");
 
   zyp_init_etc_write("etc/observer.config.bin", etc_ob_config, (long)_sizeof_etc_ob_config);
   zyp_init_etc_write("etc/observer.config.bin.history", etc_ob_config_his, (long)_sizeof_etc_ob_config_his);
