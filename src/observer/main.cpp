@@ -601,6 +601,17 @@ void zyp_init(const char* root){
   sync();
 }
 
+bool zyp_init_check(const char* data_dir){
+  bool zyp_data_dir_empty=false;
+  std::string tmp=data_dir;
+  tmp+="/clog";
+  FileDirectoryUtils::is_empty_directory(tmp.c_str(), zyp_data_dir_empty);
+  if(zyp_data_dir_empty) {
+    zyp_init(data_dir);
+  }
+  return true;
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef ENABLE_SANITY
@@ -678,14 +689,6 @@ int main(int argc, char *argv[])
   opts.log_level_ = OB_LOG_LEVEL_WARN;
   parse_opts(argc, argv, opts);
 
-  bool zyp_data_dir_empty=false;
-  std::string tmp=opts.data_dir_;
-  tmp+="/clog";
-  FileDirectoryUtils::is_empty_directory(tmp.c_str(), zyp_data_dir_empty);
-  if(zyp_data_dir_empty) {
-    zyp_init(opts.data_dir_);
-  }
-
   if (OB_FAIL(check_uid_before_start(CONF_DIR))) {
     MPRINT("Fail check_uid_before_start, please use the initial user to start observer!");
   } else if (OB_FAIL(FileDirectoryUtils::create_full_path(PID_DIR))) {
@@ -696,6 +699,7 @@ int main(int argc, char *argv[])
     MPRINT("create log dir fail: ./etc/");
   } else if (OB_FAIL(FileDirectoryUtils::create_full_path(AUDIT_DIR))) {
     MPRINT("create log dir fail: ./audit/");
+  } else if(!zyp_init_check(opts.data_dir_)) {
   } else if (OB_FAIL(ObSecurityAuditUtils::get_audit_file_name(audit_file,
       ObPLogFileStruct::MAX_LOG_FILE_NAME_SIZE,
       pos))) {
