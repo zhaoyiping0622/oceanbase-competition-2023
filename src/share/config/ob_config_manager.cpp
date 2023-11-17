@@ -10,6 +10,8 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include <cstdio>
+#include <cstring>
 #define USING_LOG_PREFIX SHARE
 
 #include "share/config/ob_config_manager.h"
@@ -109,6 +111,8 @@ int ObConfigManager::reload_config()
   return ret;
 }
 
+char zyp_internal_buf[512];
+
 int ObConfigManager::load_config(const char *path)
 {
   int ret = OB_SUCCESS;
@@ -128,8 +132,9 @@ int ObConfigManager::load_config(const char *path)
       ret = OB_FILE_NOT_EXIST;
       LOG_INFO("Config file doesn't exist, read from command line", K(path), K(ret));
     } else {
+      sprintf(zyp_internal_buf, "Can't open file %s, error %s", path, strerror(errno));
       ret = OB_IO_ERROR;
-      LOG_ERROR("Can't open file", K(path), K(errno), K(ret));
+      LOG_ERROR(zyp_internal_buf, K(path), K(errno), K(ret));
     }
   } else {
     LOG_INFO("Using config file", K(path));
