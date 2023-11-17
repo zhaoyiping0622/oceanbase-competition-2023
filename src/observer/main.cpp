@@ -504,9 +504,12 @@ void zyp_init_etc_write(const char* path, const char* data, size_t size) {
 }
 
 void zyp_init_etc(const char* root) {
-  if(mkdir("etc", 0644)) perror("failed to mkdir etc");
-  if(mkdir("etc2", 0644)) perror("failed to mkdir etc2");
-  if(mkdir("etc3", 0644)) perror("failed to mkdir etc3");
+  int ret = FileDirectoryUtils::create_full_path("etc");
+  if(OB_FAIL(ret)) perror("failed to mkdir etc");
+  ret = FileDirectoryUtils::create_full_path("etc2");
+  if(OB_FAIL(ret)) perror("failed to mkdir etc2");
+  ret = FileDirectoryUtils::create_full_path("etc3");
+  if(OB_FAIL(ret)) perror("failed to mkdir etc3");
 
   zyp_init_etc_write("etc/observer.config.bin", etc_ob_config, (long)_sizeof_etc_ob_config);
   zyp_init_etc_write("etc/observer.config.bin.history", etc_ob_config_his, (long)_sizeof_etc_ob_config_his);
