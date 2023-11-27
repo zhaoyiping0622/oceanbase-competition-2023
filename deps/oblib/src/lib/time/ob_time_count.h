@@ -8,13 +8,13 @@ namespace common {
 class FuncTimer {
  public:
   FuncTimer(ObString name, int line) : name_(name), line_(line) {
-    LOG_INFO("FuncTimer func begin, name ", K(name_), K(line_));
+    // LOG_INFO("FuncTimer func begin, name ", K(name_), K(line_));
     begin_ = ObTimeUtility::current_time_ns();
   }
 
   ~FuncTimer() {
     auto delta_time = (ObTimeUtility::current_time_ns() - begin_) / 1000.;
-    LOG_INFO("FuncTimer func end, ", K(name_), K(line_), K(delta_time));
+    // LOG_INFO("FuncTimer func end, ", K(name_), K(line_), K(delta_time));
   }
 
  private:

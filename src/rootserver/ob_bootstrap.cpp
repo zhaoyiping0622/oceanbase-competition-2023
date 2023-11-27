@@ -10,6 +10,7 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include "rootserver/ob_create_schema_parallel.h"
 #define USING_LOG_PREFIX BOOTSTRAP
 
 #include "rootserver/ob_bootstrap.h"
@@ -999,7 +1000,7 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
 
     OB_ZYP_TIME_COUNT_BEGIN(batch_create_schema); // 1s
     int64_t begin = 0;
-    int64_t batch_count = BATCH_INSERT_SCHEMA_CNT;
+    int64_t batch_count = 65536;
     const int64_t MAX_RETRY_TIMES = 3;
     for (int64_t i = 0; OB_SUCC(ret) && i < table_schemas.count(); ++i) {
       if (table_schemas.count() == (i + 1) || (i + 1 - begin) >= batch_count) {
@@ -1036,6 +1037,10 @@ int ObBootstrap::batch_create_schema(ObDDLService &ddl_service,
                                      ObIArray<ObTableSchema> &table_schemas,
                                      const int64_t begin, const int64_t end)
 {
+  {
+    OBCreateSchemaParallel csp;
+    csp.wait();
+  }
 	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const int64_t begin_time = ObTimeUtility::current_time();
