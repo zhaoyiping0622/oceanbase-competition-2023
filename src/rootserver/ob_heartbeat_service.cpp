@@ -386,7 +386,7 @@ int ObHeartbeatService::manage_heartbeat_()
     ret = OB_NOT_INIT;
     LOG_WARN("not init", KR(ret), K(is_inited_));
   } else {
-    ObTimeGuard time_guard("ObHeartbeatService::manage_heartbeat_", 2 * 1000 * 1000);
+    ObTimeGuard time_guard("ObHeartbeatService::manage_heartbeat_", 200 * 1000);
     int tmp_ret = OB_SUCCESS;
     if (OB_TMP_FAIL(prepare_whitelist_())) {
       ret = OB_SUCC(ret) ? tmp_ret : ret;

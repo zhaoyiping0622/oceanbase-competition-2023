@@ -1184,7 +1184,7 @@ int ObBootstrap::wait_all_rs_in_service()
 {
 	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
-  const int64_t check_interval = 500 * 1000;
+  const int64_t check_interval = 50 * 1000;
   int64_t left_time_can_sleep = WAIT_RS_IN_SERVICE_TIMEOUT_US;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("check_inner_stat failed", K(ret));
@@ -1196,6 +1196,8 @@ int ObBootstrap::wait_all_rs_in_service()
           KR(ret), K(left_time_can_sleep));
       break;
     }
+
+    LOG_WARN("zyp wait_all_rs_in_service is_rootserver");
 
     bool all_in_service = true;
     FOREACH_CNT_X(rs, rs_list_, all_in_service && OB_SUCCESS == ret) {
@@ -1215,6 +1217,8 @@ int ObBootstrap::wait_all_rs_in_service()
         all_in_service = false;
       }
     }
+
+    LOG_WARN("zyp wait_all_rs_in_service FOREACH_CNT_X");
 
     if (OB_FAIL(ret)) {
     } else if (all_in_service) {

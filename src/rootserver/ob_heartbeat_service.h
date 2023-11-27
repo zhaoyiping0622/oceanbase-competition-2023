@@ -57,8 +57,8 @@ public:
   static bool is_service_enabled() {return is_service_enabled_; }
   DEFINE_MTL_FUNC(ObHeartbeatService)
 private:
-  static const int64_t HB_IDLE_TIME_US = 2 * 1000 * 1000L; // 2s
-  static const int64_t HB_FAILED_IDLE_TIME_US = 0.5 * 1000 * 1000L; // 0.5s
+  static const int64_t HB_IDLE_TIME_US = 200 * 1000L; // 0.2s
+  static const int64_t HB_FAILED_IDLE_TIME_US =  50 * 1000L; // 0.05s
   // (based on the whitelist) generate & send hb_requests and receive hb_responses
   int check_is_service_enabled_();
   int64_t get_epoch_id_() const { return ATOMIC_LOAD(&epoch_id_); }
