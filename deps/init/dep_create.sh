@@ -78,7 +78,7 @@ function get_os_release() {
         version_ge "9" && compat_centos7 && return
         ;;
       fedora)
-        version_ge "33" && compat_centos7 && return
+        version_ge "33" && compat_centos9 && return
         ;;
       opensuse-leap)
         version_ge "15" && compat_centos7 && return

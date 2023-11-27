@@ -4,7 +4,7 @@
 namespace oceanbase {
 class OBCreateSchemaParallel : public lib::TGRunnable {
  public:
-  OBCreateSchemaParallel();
+  OBCreateSchemaParallel(std::function<void()> func);
   virtual ~OBCreateSchemaParallel();
   int init();
   int start();
@@ -17,6 +17,7 @@ class OBCreateSchemaParallel : public lib::TGRunnable {
  private:
   bool is_inited_{false};
   int tg_id_;
+  std::function<void()> func_;
 };
 }  // namespace oceanbase
 #endif  // OCEANBASE_ROOTSERVER_OB_CREATE_SCHEMA_PARALLEL_H_

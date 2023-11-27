@@ -24,6 +24,7 @@ ob_set_subtarget(ob_rootserver backup
 
 ob_set_subtarget(ob_rootserver common
   ob_bootstrap.cpp
+  ob_create_schema_parallel.cpp
   ob_disaster_recovery_task_table_updater.cpp
   ob_balance_group_ls_stat_operator.cpp
   ob_disaster_recovery_info.cpp

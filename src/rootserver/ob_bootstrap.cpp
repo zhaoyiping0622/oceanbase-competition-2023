@@ -10,6 +10,12 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#include "lib/oblog/ob_log_module.h"
+#include "lib/profile/ob_trace_id.h"
+#include "lib/utility/ob_macro_utils.h"
 #include "rootserver/ob_create_schema_parallel.h"
 #define USING_LOG_PREFIX BOOTSTRAP
 
@@ -999,32 +1005,59 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
     OB_ZYP_TIME_COUNT_END(HEAP_VAR_core_table);
 
     OB_ZYP_TIME_COUNT_BEGIN(batch_create_schema); // 1s
-    int64_t begin = 0;
-    int64_t batch_count = 65536;
+    int64_t batch_count = 1;
     const int64_t MAX_RETRY_TIMES = 3;
-    for (int64_t i = 0; OB_SUCC(ret) && i < table_schemas.count(); ++i) {
-      if (table_schemas.count() == (i + 1) || (i + 1 - begin) >= batch_count) {
-        int64_t retry_times = 1;
-        while (OB_SUCC(ret)) {
-          if (OB_FAIL(batch_create_schema(ddl_service, table_schemas, begin, i + 1))) {
-            LOG_WARN("batch create schema failed", K(ret), "table count", i + 1 - begin);
-            // bugfix:
-            if ((OB_SCHEMA_EAGAIN == ret
-                 || OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH == ret)
-                && retry_times <= MAX_RETRY_TIMES) {
-              retry_times++;
-              ret = OB_SUCCESS;
-              LOG_INFO("schema error while create table, need retry", KR(ret), K(retry_times));
-              ob_usleep(1 * 1000 * 1000L); // 1s
+
+    std::atomic<int> now{0};
+
+    auto trace_id = ObCurTraceId::get_trace_id();
+    auto create_schema = [&]() {
+      int ret = OB_SUCCESS;
+      if(trace_id != nullptr)  {
+        ObCurTraceId::set(*trace_id);
+      }
+      LOG_WARN("in labmda create_schema");
+      while(OB_SUCC(ret)) {
+        int i = now++;
+        LOG_WARN("in while", K(i), K(table_schemas.count()));
+        if(i>=table_schemas.count()) break;
+        if (i % batch_count == 0) {
+          int tail = i + batch_count;
+          if(tail > table_schemas.count()) {
+            tail = table_schemas.count();
+          }
+          LOG_WARN("try to create", K(i), K(tail));
+          int64_t retry_times = 1;
+          while (OB_SUCC(ret)) {
+            if (OB_FAIL(batch_create_schema(ddl_service, table_schemas, i, tail))) {
+              LOG_WARN("batch create schema failed", K(ret), "table count", tail);
+              // bugfix:
+              if ((OB_SCHEMA_EAGAIN == ret
+                   || OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH == ret)
+                  && retry_times <= MAX_RETRY_TIMES) {
+                retry_times++;
+                ret = OB_SUCCESS;
+                LOG_INFO("schema error while create table, need retry", KR(ret), K(retry_times));
+                ob_usleep(1 * 1000 * 1000L); // 1s
+              }
+            } else {
+              break;
             }
-          } else {
-            break;
           }
         }
-        if (OB_SUCC(ret)) {
-          begin = i + 1;
-        }
       }
+    };
+    OBCreateSchemaParallel csp(create_schema);
+    if(OB_FAIL(csp.init())){
+      LOG_WARN("failed to init csp", K(ret));
+    } else if(OB_FAIL(csp.start())) {
+      LOG_WARN("failed to start csp", K(ret));
+    } else {
+      LOG_INFO("csp wait begin");
+      csp.wait();
+      LOG_INFO("csp wait done");
+      csp.destroy();
+      LOG_INFO("csp destroy");
     }
     OB_ZYP_TIME_COUNT_END(batch_create_schema);
   }
@@ -1037,10 +1070,6 @@ int ObBootstrap::batch_create_schema(ObDDLService &ddl_service,
                                      ObIArray<ObTableSchema> &table_schemas,
                                      const int64_t begin, const int64_t end)
 {
-  {
-    OBCreateSchemaParallel csp;
-    csp.wait();
-  }
 	OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const int64_t begin_time = ObTimeUtility::current_time();
