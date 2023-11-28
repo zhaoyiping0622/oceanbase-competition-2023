@@ -63,6 +63,10 @@ def __create_tenant(cursor, *,
     create_resource_pool_sql = f"CREATE RESOURCE POOL {resource_pool_name} unit='{unit_name}', unit_num=1,ZONE_LIST=('{zone_name}');"
     create_tenant_sql = f"CREATE TENANT IF NOT EXISTS {tenant_name} resource_pool_list = ('{resource_pool_name}') set ob_tcp_invited_nodes = '%';"
 
+    _logger.info(f"sql {create_unit_sql}")
+    _logger.info(f"sql {create_resource_pool_sql}")
+    _logger.info(f"sql {create_tenant_sql}")
+
     cursor.execute(create_unit_sql)
     _logger.info(f'unit create done: {create_unit_sql}, time {(datetime.datetime.now()-begin_time).total_seconds()*1000} ms')
 
