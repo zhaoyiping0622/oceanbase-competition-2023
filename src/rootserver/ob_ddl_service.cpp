@@ -23217,7 +23217,7 @@ int ObDDLService::create_sys_table_schemas(
     LOG_WARN("ptr is null", KR(ret), KP_(sql_proxy), KP_(schema_service));
   } else {
     // persist __all_core_table's schema in inner table, which is only used for sys views.
-    ddl_operator.create_table_zyp(tables, trans);
+    ddl_operator.create_table_batch(tables, trans);
   }
   return ret;
 }

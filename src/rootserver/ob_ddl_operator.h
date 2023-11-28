@@ -244,7 +244,7 @@ public:
   int alter_user_profile(const common::ObString &ddl_str,
                          share::schema::ObUserInfo &schema,
                          common::ObMySQLTransaction &trans);
-  virtual int create_table_zyp(common::ObIArray<ObTableSchema> &table_schema,
+  virtual int create_table_batch(common::ObIArray<ObTableSchema> &table_schema,
                            common::ObMySQLTransaction &trans);
   virtual int create_table(share::schema::ObTableSchema &table_schemas,
                            common::ObMySQLTransaction &trans,

@@ -14,6 +14,7 @@
 #define USING_LOG_PREFIX RS
 #include "rootserver/ob_ddl_operator.h"
 
+#include "lib/time/ob_time_count.h"
 #include "lib/time/ob_time_utility.h"
 #include "lib/string/ob_sql_string.h"
 #include "lib/mysqlclient/ob_mysql_transaction.h"
@@ -1462,26 +1463,35 @@ int ObDDLOperator::create_user(ObUserInfo &user,
   }
   return ret;
 }
-int ObDDLOperator::create_table_zyp(common::ObIArray<ObTableSchema> &table_schemas,
+int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_schemas,
                                     ObMySQLTransaction &trans){
   int ret = OB_SUCCESS;
-  for(int i=0;i<table_schemas.count();i++) {
-    auto& table_schema = table_schemas.at(i);
-    auto table_name = table_schema.get_table_name();
-    const uint64_t tenant_id = table_schema.get_tenant_id();
-    int64_t new_schema_version = OB_INVALID_VERSION;
-    ObSchemaService *schema_service = schema_service_.get_schema_service();
+  ObSchemaService *schema_service = schema_service_.get_schema_service();
+  const uint64_t tenant_id = table_schemas.at(0).get_tenant_id();
+  int64_t new_schema_version = OB_INVALID_VERSION;
+  {
+    OB_ZYP_TIME_COUNT;
     ObSchemaGetterGuard schema_guard;
     if (OB_ISNULL(schema_service)) {
       ret = OB_ERR_SYS;
       RS_LOG(ERROR, "schema_service must not null");
     } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(tenant_id, schema_guard))) {
       LOG_WARN("failed to get schema guard", K(ret));
-    } else if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version))) {
-      LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
-    } else {
-      LOG_INFO("zyp schema_version", K(table_name), K(new_schema_version));
-      table_schema.set_schema_version(new_schema_version);
+    } else{
+      for(int i=0;i<table_schemas.count()&&OB_SUCC(ret);i++) {
+        if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version)))  {
+          LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
+        } else {
+          table_schemas.at(i).set_schema_version(new_schema_version);
+        }
+      }
+    }
+  }
+  if(OB_SUCC(ret)) {
+    for(int i=0;i<table_schemas.count();i++) {
+      auto& table_schema = table_schemas.at(i);
+      auto table_name = table_schema.get_table_name();
+      const uint64_t tenant_id = table_schema.get_tenant_id();
       if (OB_FAIL(schema_service->get_table_sql_service().create_table(
               table_schema,
               trans,
