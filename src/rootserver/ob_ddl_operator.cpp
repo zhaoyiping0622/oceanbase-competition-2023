@@ -1499,11 +1499,6 @@ int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_sch
               false,
               false))) {
         RS_LOG(WARN, "failed to create table", K(ret));
-      } else if (OB_FAIL(sync_version_for_cascade_table(tenant_id,
-              table_schema.get_depend_table_ids(), trans))) {
-        RS_LOG(WARN, "fail to sync cascade depend table", K(ret));
-      } else if (OB_FAIL(sync_version_for_cascade_mock_fk_parent_table(table_schema.get_tenant_id(), table_schema.get_depend_mock_fk_parent_table_ids(), trans))) {
-        LOG_WARN("fail to sync cascade depend_mock_fk_parent_table_ids table", K(ret));
       }
     }
   }
