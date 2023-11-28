@@ -1466,36 +1466,36 @@ int ObDDLOperator::create_table_zyp(common::ObIArray<ObTableSchema> &table_schem
                                     ObMySQLTransaction &trans){
   int ret = OB_SUCCESS;
   for(int i=0;i<table_schemas.count();i++) {
-      auto& table_schema = table_schemas.at(i);
-      auto table_name = table_schema.get_table_name();
-      const uint64_t tenant_id = table_schema.get_tenant_id();
-      int64_t new_schema_version = OB_INVALID_VERSION;
-      ObSchemaService *schema_service = schema_service_.get_schema_service();
-      ObSchemaGetterGuard schema_guard;
-      if (OB_ISNULL(schema_service)) {
-        ret = OB_ERR_SYS;
-        RS_LOG(ERROR, "schema_service must not null");
-      } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(tenant_id, schema_guard))) {
-        LOG_WARN("failed to get schema guard", K(ret));
-      } else if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version))) {
-        LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
-      } else {
-        LOG_INFO("schema_version", K(table_name), K(new_schema_version));
-        table_schema.set_schema_version(new_schema_version);
-        if (OB_FAIL(schema_service->get_table_sql_service().create_table(
-                table_schema,
-                trans,
-                NULL,
-                false,
-                false))) {
-          RS_LOG(WARN, "failed to create table", K(ret));
-        } else if (OB_FAIL(sync_version_for_cascade_table(tenant_id,
-                table_schema.get_depend_table_ids(), trans))) {
-          RS_LOG(WARN, "fail to sync cascade depend table", K(ret));
-        } else if (OB_FAIL(sync_version_for_cascade_mock_fk_parent_table(table_schema.get_tenant_id(), table_schema.get_depend_mock_fk_parent_table_ids(), trans))) {
-          LOG_WARN("fail to sync cascade depend_mock_fk_parent_table_ids table", K(ret));
-        }
+    auto& table_schema = table_schemas.at(i);
+    auto table_name = table_schema.get_table_name();
+    const uint64_t tenant_id = table_schema.get_tenant_id();
+    int64_t new_schema_version = OB_INVALID_VERSION;
+    ObSchemaService *schema_service = schema_service_.get_schema_service();
+    ObSchemaGetterGuard schema_guard;
+    if (OB_ISNULL(schema_service)) {
+      ret = OB_ERR_SYS;
+      RS_LOG(ERROR, "schema_service must not null");
+    } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(tenant_id, schema_guard))) {
+      LOG_WARN("failed to get schema guard", K(ret));
+    } else if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version))) {
+      LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
+    } else {
+      LOG_INFO("zyp schema_version", K(table_name), K(new_schema_version));
+      table_schema.set_schema_version(new_schema_version);
+      if (OB_FAIL(schema_service->get_table_sql_service().create_table(
+              table_schema,
+              trans,
+              NULL,
+              false,
+              false))) {
+        RS_LOG(WARN, "failed to create table", K(ret));
+      } else if (OB_FAIL(sync_version_for_cascade_table(tenant_id,
+              table_schema.get_depend_table_ids(), trans))) {
+        RS_LOG(WARN, "fail to sync cascade depend table", K(ret));
+      } else if (OB_FAIL(sync_version_for_cascade_mock_fk_parent_table(table_schema.get_tenant_id(), table_schema.get_depend_mock_fk_parent_table_ids(), trans))) {
+        LOG_WARN("fail to sync cascade depend_mock_fk_parent_table_ids table", K(ret));
       }
+    }
   }
 
   // add audit in table if necessary
