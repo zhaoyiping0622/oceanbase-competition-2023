@@ -10,6 +10,7 @@
  * See the Mulan PubL v2 for more details.
  */
 
+#include "lib/utility/ob_macro_utils.h"
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "ob_table_sql_service.h"
 #include "lib/oblog/ob_log.h"
@@ -33,6 +34,9 @@
 #include "rootserver/ob_root_service.h"
 #include "observer/omt/ob_tenant_timezone_mgr.h"
 #include "sql/ob_sql_utils.h"
+#include "lib/time/ob_time_count.h"
+
+
 namespace oceanbase
 {
 using namespace common;
@@ -44,6 +48,7 @@ namespace share
 {
 namespace schema
 {
+
 
 int ObTableSqlService::exec_update(
     ObISQLClient &sql_client,
@@ -84,16 +89,18 @@ int ObTableSqlService::exec_insert(
 {
   int ret = OB_SUCCESS;
   if (is_core_table(table_id)) {
+    OB_ZYP_TIME_COUNT;
     ObArray<ObCoreTableProxy::UpdateCell> cells;
     ObCoreTableProxy kv(table_name, sql_client, tenant_id);
-    if (OB_FAIL(kv.load_for_update())) {
+    if(OB_FAIL(kv.load_for_update())) {
       LOG_WARN("failed to load kv for insert", K(ret));
     } else if (OB_FAIL(dml.splice_core_cells(kv, cells))) {
       LOG_WARN("splice core cells failed", K(ret));
     } else if (OB_FAIL(kv.replace_row(cells, affected_rows))) {
       LOG_WARN("failed to replace row", K(ret));
-    }
+    } 
   } else {
+    OB_ZYP_TIME_COUNT;
     const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
     ObDMLExecHelper exec(sql_client, exec_tenant_id);
     if (OB_FAIL(exec.exec_insert(table_name, dml, affected_rows))) {
@@ -1871,6 +1878,7 @@ int ObTableSqlService::add_table(
     const bool update_object_status_ignore_version,
     const bool only_history)
 {
+  LOG_INFO("zyp add_table");
   int ret = OB_SUCCESS;
 
   ObDMLSqlSplicer dml;
@@ -1889,6 +1897,7 @@ int ObTableSqlService::add_table(
   } else if (OB_FAIL(gen_table_dml(exec_tenant_id, table, update_object_status_ignore_version, dml))) {
     LOG_WARN("gen table dml failed", K(ret));
   } else {
+    OB_ZYP_TIME_COUNT_BEGIN(all_table);
     ObDMLExecHelper exec(sql_client, exec_tenant_id);
     int64_t affected_rows = 0;
     if (!only_history) {
@@ -1903,6 +1912,7 @@ int ObTableSqlService::add_table(
         LOG_WARN("affected_rows unexpected to be one", K(affected_rows), K(ret));
       }
     }
+    OB_ZYP_TIME_COUNT_END(all_table);
     if (OB_SUCC(ret)) {
       const int64_t is_deleted = 0;
       const char *table_name = NULL;

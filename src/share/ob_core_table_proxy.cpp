@@ -25,6 +25,7 @@
 #include "share/ob_debug_sync.h"
 #include "lib/timezone/ob_time_convert.h"
 #include "share/ob_tenant_id_schema_version.h"
+#include "lib/time/ob_time_count.h"
 
 namespace oceanbase
 {
@@ -372,6 +373,7 @@ int ObCoreTableProxy::load()
 
 int ObCoreTableProxy::load_for_update()
 {
+  OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const bool for_update = true;
   if (!is_valid()) {
@@ -792,6 +794,7 @@ int ObCoreTableProxy::update_row(const ObIArray<UpdateCell> &cells, int64_t &aff
 
 int ObCoreTableProxy::replace_row(const ObIArray<UpdateCell> &cells, int64_t &affected_rows)
 {
+  OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   const bool insert = true;
   if (!is_valid() || cells.count() <= 0) {

@@ -1273,6 +1273,7 @@ int ObDMLSqlSplicer::splice_batch_predicates_sql(common::ObSqlString &sql) const
     } else if (OB_FAIL(sql_client_.write(tenant_id_, sql.ptr(), affected_rows))) {   \
       LOG_WARN("execute sql failed", K(ret), K(sql));                                \
     }  \
+    LOG_INFO("zyp exec_dml sql", K(sql));\
     return ret;                                                                      \
   }
 
