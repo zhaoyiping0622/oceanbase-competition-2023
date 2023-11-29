@@ -4991,13 +4991,13 @@ int ObRootService::do_restart()
     FLOG_WARN("not master", KR(ret));
   }
 
-  // renew master rootservice, ignore error
-  if (OB_SUCC(ret)) {
-    int tmp_ret = rs_mgr_->renew_master_rootserver();
-    if (OB_SUCCESS != tmp_ret) {
-      FLOG_WARN("renew master rootservice failed", KR(tmp_ret));
-    }
-  }
+  // // renew master rootservice, ignore error
+  // if (OB_SUCC(ret)) {
+  //   int tmp_ret = rs_mgr_->renew_master_rootserver();
+  //   if (OB_SUCCESS != tmp_ret) {
+  //     FLOG_WARN("renew master rootservice failed", KR(tmp_ret));
+  //   }
+  // }
 
   //fetch root partition info
   if (FAILEDx(fetch_sys_tenant_ls_info())) {
@@ -5006,13 +5006,13 @@ int ObRootService::do_restart()
     FLOG_INFO("fetch root partition info succeed", KR(ret));
   }
 
-  // broadcast root server address, ignore error
-  if (OB_SUCC(ret)) {
-    int tmp_ret = update_rslist();
-    if (OB_SUCCESS != tmp_ret) {
-      FLOG_WARN("failed to update rslist but ignored", KR(tmp_ret));
-    }
-  }
+  // // broadcast root server address, ignore error
+  // if (OB_SUCC(ret)) {
+  //   int tmp_ret = update_rslist();
+  //   if (OB_SUCCESS != tmp_ret) {
+  //     FLOG_WARN("failed to update rslist but ignored", KR(tmp_ret));
+  //   }
+  // }
 
   if (OB_SUCC(ret)) {
     //standby cluster trigger load_refresh_schema_status by heartbeat.
