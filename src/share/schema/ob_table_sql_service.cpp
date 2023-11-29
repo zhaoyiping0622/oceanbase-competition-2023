@@ -2355,6 +2355,96 @@ int ObTableSqlService::delete_single_column(
 
   return ret;
 }
+int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &tables,
+                       common::ObISQLClient &sql_client) {
+  int ret = OB_SUCCESS;
+  int64_t start_usec = ObTimeUtility::current_time();
+  int64_t end_usec = 0;
+  int64_t cost_usec = 0;
+  uint64_t data_version = 0;
+  const uint64_t tenant_id = tables.at(0).get_tenant_id();
+  for(int i=0;i<tables.count();i++) {
+    auto &table = tables.at(i);
+    if(table.is_view_table() && data_version >= DATA_VERSION_4_1_0_0
+             && table.get_column_count() > 0) {
+      LOG_INFO("zyp create_table_batch 2371");
+      table.set_view_column_filled_flag(ObViewColumnFilledFlag::FILLED);
+    }
+  }
+  // TODO(zhaoyiping): 接下来所有表都调用一次add_table 
+  // ObArray<ObDMLSqlSplicer> dmls;
+  // dmls.reserve(tables.count());
+  // const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
+  // for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
+  //   gen_table_dml(exec_tenant_id, const ObTableSchema &table, const bool update_object_status_ignore_version, share::ObDMLSqlSplicer &dml)
+  // }
+  for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
+    auto &table = tables.at(i);
+    add_table(sql_client, table, false);
+    if (OB_FAIL(ret)) {
+    } else if (!table.is_view_table()) {
+      end_usec = ObTimeUtility::current_time();
+      cost_usec = end_usec - start_usec;
+      start_usec = end_usec;
+      LOG_INFO("add_table cost: ", K(cost_usec));
+      if (OB_FAIL(add_columns(sql_client, table))) {
+        LOG_WARN("insert column schema failed, ", K(ret), "table", to_cstring(table));
+      } else if (OB_FAIL(add_constraints(sql_client, table))) {
+        LOG_WARN("insert constraint schema failed, ", K(ret), "table", to_cstring(table));
+      }
+      end_usec = ObTimeUtility::current_time();
+      cost_usec = end_usec - start_usec;
+      start_usec = end_usec;
+      LOG_INFO("add_column cost: ", K(cost_usec));
+      if (OB_SUCC(ret)) {
+        if (OB_FAIL(add_table_part_info(sql_client, table))) {
+          LOG_WARN("fail to add_table_part_info", K(ret));
+        }
+        end_usec = ObTimeUtility::current_time();
+        cost_usec = end_usec - start_usec;
+        start_usec = end_usec;
+        LOG_INFO("add part info cost: ", K(cost_usec));
+      }
+      // insert into all_foreign_key.
+      if (OB_SUCC(ret) && !is_inner_table(table.get_table_id())) {
+        LOG_WARN("zyp create_table_batch 2404");
+        if (OB_FAIL(add_foreign_key(sql_client, table, false/* only_history */))) {
+          LOG_WARN("failed to add foreign key", K(ret));
+        }
+      }
+    } else if (table.view_column_filled() //view table
+               && OB_FAIL(add_columns(sql_client, table))) {
+      LOG_WARN("insert column schema failed, ", K(ret), "table", to_cstring(table));
+    }
+
+    ObSchemaOperation opt;
+    opt.tenant_id_ = tenant_id;
+    opt.database_id_ = table.get_database_id();
+    opt.tablegroup_id_ = table.get_tablegroup_id();
+    opt.table_id_ = table.get_table_id();
+    if (table.is_index_table()) {
+      opt.op_type_ = table.is_global_index_table() ? OB_DDL_CREATE_GLOBAL_INDEX : OB_DDL_CREATE_INDEX;
+    } else if (table.is_view_table()){
+      opt.op_type_ = OB_DDL_CREATE_VIEW;
+    } else {
+      opt.op_type_ = OB_DDL_CREATE_TABLE;
+    }
+    opt.schema_version_ = table.get_schema_version();
+    opt.ddl_stmt_str_ = ObString();
+    if (OB_SUCC(ret)) {
+      if (OB_FAIL(log_operation_wrapper(opt, sql_client))) {
+        LOG_WARN("log operation failed", K(opt), K(ret));
+      }
+      if (OB_SUCC(ret)) {
+        end_usec = ObTimeUtility::current_time();
+        cost_usec = end_usec - start_usec;
+        start_usec = end_usec;
+        LOG_INFO("log_operation cost: ", K(cost_usec));
+      }
+    }
+  }
+  return ret;
+}
 
 int ObTableSqlService::create_table(ObTableSchema &table,
                                     ObISQLClient &sql_client,

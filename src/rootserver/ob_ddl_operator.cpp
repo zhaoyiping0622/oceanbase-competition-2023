@@ -1488,18 +1488,8 @@ int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_sch
     }
   }
   if(OB_SUCC(ret)) {
-    for(int i=0;i<table_schemas.count();i++) {
-      auto& table_schema = table_schemas.at(i);
-      auto table_name = table_schema.get_table_name();
-      const uint64_t tenant_id = table_schema.get_tenant_id();
-      if (OB_FAIL(schema_service->get_table_sql_service().create_table(
-              table_schema,
-              trans,
-              NULL,
-              false,
-              false))) {
-        RS_LOG(WARN, "failed to create table", K(ret));
-      }
+    if(OB_FAIL(schema_service->get_table_sql_service().create_table_batch(table_schemas, trans))) {
+      LOG_WARN("failed to create_table_batch", KR(ret));
     }
   }
 
