@@ -259,14 +259,9 @@ bool ObTenantMemoryMgr::update_hold(const int64_t size, const uint64_t ctx_id,
     ATOMIC_AAF(&sum_hold_, size);
     updated = true;
   } else {
-    if (sum_hold_ + size <= limit_) {
-      const int64_t nvalue = ATOMIC_AAF(&sum_hold_, size);
-      if (nvalue > limit_) {
-        ATOMIC_AAF(&sum_hold_, -size);
-      } else {
-        updated = true;
-      }
-    }
+    // TODO(zhaoyiping): 这里可以加一个变量，来确定是否要加上size
+    ATOMIC_AAF(&sum_hold_, size);
+    updated = true;
     if (OB_UNLIKELY(error_log_when_tenant_500_oversize &&
                     OB_SERVER_TENANT_ID == tenant_id_ &&
                     sum_hold_ > (1LL<<30))) {

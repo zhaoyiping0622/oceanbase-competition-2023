@@ -46,6 +46,11 @@ int OBCreateSchemaParallel::stop() {
 void OBCreateSchemaParallel::wait() { TG_WAIT(tg_id_); }
 void OBCreateSchemaParallel::destroy() { TG_DESTROY(tg_id_); }
 void OBCreateSchemaParallel::run1() {
+  if(cnt_++>=8){
+    --cnt_;
+    return;
+  }
+  DEFER({--cnt_;});
   lib::set_thread_name("OBCreateSchemaParallel");
   func_();
 }

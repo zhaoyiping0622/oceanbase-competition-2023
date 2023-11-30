@@ -165,5 +165,5 @@ TG_DEF(TenantTTLManager, TTLManager, TIMER)
 TG_DEF(TenantTabletTTLMgr, TTLTabletMgr, TIMER)
 TG_DEF(TntSharedTimer, TntSharedTimer, TIMER)
 // TODO(zhaoyiping): 这里修改一下线程池大小 
-TG_DEF(ZYPCreateSchema, CreateSchema, THREAD_POOL, 16)
+TG_DEF(ZYPCreateSchema, CreateSchema, THREAD_POOL, 8)
 #endif

@@ -18,6 +18,7 @@ class OBCreateSchemaParallel : public lib::TGRunnable {
   bool is_inited_{false};
   int tg_id_;
   std::function<void()> func_;
+  std::atomic_int cnt_{0};
 };
 }  // namespace oceanbase
 #endif  // OCEANBASE_ROOTSERVER_OB_CREATE_SCHEMA_PARALLEL_H_

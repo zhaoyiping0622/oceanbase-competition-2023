@@ -245,7 +245,7 @@ public:
                          share::schema::ObUserInfo &schema,
                          common::ObMySQLTransaction &trans);
   virtual int create_table_batch(common::ObIArray<ObTableSchema> &table_schema,
-                           common::ObMySQLTransaction &trans);
+                           common::ObMySQLTransaction &trans, std::vector<ObISQLClient*>& sql_clients);
   virtual int create_table(share::schema::ObTableSchema &table_schemas,
                            common::ObMySQLTransaction &trans,
                            const common::ObString *ddl_stmt_str = NULL,

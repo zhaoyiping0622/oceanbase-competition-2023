@@ -1166,7 +1166,8 @@ private:
   typedef common::ObArray<share::ObUnit> ObPartitionUnits;
   typedef common::ObArray<ObPartitionUnits> ObPartitionUnitsArray;
   static const int64_t WAIT_ELECT_LEADER_TIMEOUT_US = 120 * 1000 * 1000;  // 120s
-  static const int64_t REFRESH_SCHEMA_INTERVAL_US = 500 * 1000;              //500ms
+  // TODO(zhaoyiping): 改改
+  static const int64_t REFRESH_SCHEMA_INTERVAL_US = 50 * 1000;              //500ms
 
   enum AlterLocalityType
   {

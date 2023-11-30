@@ -23208,6 +23208,7 @@ int ObDDLService::create_sys_table_schemas(
     ObMySQLTransaction &trans,
     common::ObIArray<ObTableSchema> &tables)
 {
+  LOG_INFO("create_sys_table_schemas begin");
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("variable is not init", KR(ret));
@@ -23216,9 +23217,27 @@ int ObDDLService::create_sys_table_schemas(
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("ptr is null", KR(ret), KP_(sql_proxy), KP_(schema_service));
   } else {
+    std::vector<ObISQLClient*> sql_clients;
+    for(int i=0;i<8;i++){
+      ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", schema_service_, true, true, false, false);
+      const int64_t refreshed_schema_version = 0;
+      if(OB_FAIL(sql_client->start(sql_proxy_, tables.at(0).get_tenant_id(), refreshed_schema_version))) {
+        LOG_INFO("failed to start sql_client", KR(ret), K(i));
+      } else {
+        LOG_INFO("start sql_client successfully", K(i));
+      }
+      sql_clients.push_back(sql_client);
+    }
     // persist __all_core_table's schema in inner table, which is only used for sys views.
-    ddl_operator.create_table_batch(tables, trans);
+    ddl_operator.create_table_batch(tables, trans, sql_clients);
+    for(int i=0;i<8;i++){
+      if(OB_FAIL(((ObDDLSQLTransaction*)sql_clients[i])->end(true))){
+        LOG_WARN("sql_clients end failed");
+      }
+      OB_DELETE(ObISQLClient, "create_table", sql_clients[i]);
+    }
   }
+  LOG_INFO("create_sys_table_schemas end");
   return ret;
 }
 
