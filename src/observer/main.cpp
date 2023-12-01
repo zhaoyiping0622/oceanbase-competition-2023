@@ -44,6 +44,7 @@
 #include "lib/profile/gperf.h"
 #endif
 
+
 using namespace oceanbase::obsys;
 using namespace oceanbase;
 using namespace oceanbase::lib;
@@ -56,6 +57,28 @@ using namespace oceanbase::share;
 #define MPRINTx(format, ...)                                                   \
   MPRINT(format, ##__VA_ARGS__);                                               \
   exit(1)
+
+extern "C" {
+void* libc_hdl;
+const char* LIBC_NAME="libc.so.6";
+unsigned int (*glibc_sleep)(unsigned int);
+unsigned int (*glibc_usleep)(useconds_t);
+// unsigned int (*glibc_nanosleep)(unsigned int);
+const int div_times = 128;
+__attribute__((constructor)) void hook_init() {
+  libc_hdl = dlopen(LIBC_NAME, RTLD_LAZY | RTLD_NOLOAD);
+  *(void**)&glibc_sleep = dlsym(libc_hdl, "sleep");;
+  *(void**)&glibc_usleep = dlsym(libc_hdl, "usleep");;
+  // *(void**)&glibc_nanosleep = dlsym(libc_hdl, "nanosleep");;
+  puts("hook_init");
+}
+int usleep(useconds_t microseconds){
+  return glibc_usleep(microseconds/div_times);
+}
+unsigned int sleep(unsigned int seconds) {
+  return usleep(seconds*1000);
+}
+}
 
 static void print_help()
 {
