@@ -36,6 +36,7 @@
 #include "observer/omt/ob_tenant_timezone_mgr.h"
 #include "sql/ob_sql_utils.h"
 #include "lib/time/ob_time_count.h"
+#include "rootserver/ob_ddl_service.h"
 
 
 namespace oceanbase
@@ -2359,19 +2360,19 @@ int ObTableSqlService::delete_single_column(
 
 class ObCoreTableProxyBatch {
   public:
-    ObCoreTableProxyBatch(const char* table, ObISQLClient& sql_client, uint64_t tenant_id):
-      table_name_(table), kv_(table, sql_client, tenant_id), tenant_id_(tenant_id){}
+    ObCoreTableProxyBatch(const char* table, ObISQLClient& sql_client, uint64_t tenant_id, std::atomic_int& row_id):
+      table_name_(table), kv_(table, sql_client, tenant_id), row_id_(row_id), tenant_id_(tenant_id) {}
     int AddDMLSqlSplicer(ObDMLSqlSplicer& raw_dml) {
       int ret = OB_SUCCESS;
       ObArray<ObCoreTableProxy::UpdateCell> cells;
       if(OB_FAIL(raw_dml.splice_core_cells(kv_, cells))) {
         LOG_WARN("failed to splice_core_cells", KR(ret));
       } else {
-        cnt_++;
+        int now = row_id_++;
         FOREACH_X(uc, cells, ret==OB_SUCCESS) {
           if(OB_FAIL(dml_.add_pk_column("table_name", table_name_))) {
             LOG_WARN("failed to add table_name", KR(ret));
-          } else if(OB_FAIL(dml_.add_pk_column("row_id", cnt_))) {
+          } else if(OB_FAIL(dml_.add_pk_column("row_id", now))) {
             LOG_WARN("failed to add row_id", KR(ret));
           } else if(OB_FAIL(dml_.add_pk_column("column_name", uc->cell_.name_))) {
             LOG_WARN("failed to add column_name", KR(ret));
@@ -2410,7 +2411,7 @@ class ObCoreTableProxyBatch {
     const char* table_name_;
     ObCoreTableProxy kv_;
     ObDMLSqlSplicer dml_;
-    int64_t cnt_{0};
+    std::atomic_int& row_id_;
     uint64_t tenant_id_;
 };
 
@@ -2425,15 +2426,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   const uint64_t tenant_id = tables.at(0).get_tenant_id();
   LOG_INFO("table count", K(tables.count()));
   const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
-  OB_ZYP_TIME_COUNT_BEGIN(gen_table_dml); // 0.3s
-  ObDMLSqlSplicer dml_all_table;
-  ObDMLSqlSplicer dml_all_table_history;
-  ObDMLSqlSplicer dml_all_column;
-  ObDMLSqlSplicer dml_all_column_history;
-  ObDMLSqlSplicer dml_all_ddl_operation;
-  ObDMLSqlSplicer dml_all_ddl_id;
-  ObCoreTableProxyBatch kv_all_table(OB_ALL_TABLE_TNAME, *sql_client[0], tenant_id);
-  ObCoreTableProxyBatch kv_all_column(OB_ALL_COLUMN_TNAME, *sql_client[0], tenant_id);
   auto add_all_table = [&](ObDMLSqlSplicer& dml, ObTableSchema& table, std::function<int(ObDMLSqlSplicer&)> end){
     auto table_id = table.get_table_id();
     if(OB_FAIL(gen_table_dml(exec_tenant_id, table, false, dml))) {
@@ -2451,12 +2443,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       } else if(OB_FAIL(end(dml))) {
         LOG_WARN("fail to end all_column", KR(ret));
       }
-    }
-  };
-  auto add_all_constraints = [&](ObDMLSqlSplicer& dml, ObTableSchema& table, std::function<int(ObDMLSqlSplicer&)> end){
-    auto table_id = table.get_table_id();
-    for(auto it = table.constraint_begin_for_non_const_iter();
-        OB_SUCC(ret)&&it!=table.constraint_end_for_non_const_iter();it++) {
     }
   };
   auto add_ddl_operation = [&](ObDMLSqlSplicer& dml, ObTableSchema& table, std::function<int(ObDMLSqlSplicer&)> end){
@@ -2488,15 +2474,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     dml.add_gmt_modified();
     end(dml);
   };
-  auto add_to_kv=[&](ObCoreTableProxyBatch& kv) {
-    return [&](ObDMLSqlSplicer& dml) {
-      DEFER({ dml.~ObDMLSqlSplicer(); new (&dml)ObDMLSqlSplicer; });
-      return kv.AddDMLSqlSplicer(dml);
-    };
-  };
-  auto add_to_dml=[&](ObDMLSqlSplicer& dml) {
-    return dml.finish_row();
-  };
   auto add_to_dml_history = [&](ObDMLSqlSplicer& dml) {
     uint64_t is_deleted = 0;
     int ret = OB_SUCCESS;
@@ -2504,6 +2481,15 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       LOG_WARN("failed to add column is_deleted");
       return ret;
     } else return dml.finish_row();
+  };
+  auto add_to_dml=[&](ObDMLSqlSplicer& dml) {
+    return dml.finish_row();
+  };
+  auto add_to_kv=[&](ObCoreTableProxyBatch& kv) {
+    return [&](ObDMLSqlSplicer& dml) {
+      DEFER({ dml.~ObDMLSqlSplicer(); new (&dml)ObDMLSqlSplicer; });
+      return kv.AddDMLSqlSplicer(dml);
+    };
   };
   int64_t last_schema_version;
   for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
@@ -2513,14 +2499,16 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       last_schema_version = table.get_schema_version();
     }
   }
-  OB_ZYP_TIME_COUNT_END(gen_table_dml);
   auto exec_sql = [&](ObISQLClient &sql_client, ObDMLSqlSplicer& dml, const char* table_name) {
     int ret = OB_SUCCESS;
     int64_t affected_rows;
     ObSqlString sql;
-    if(OB_FAIL(dml.splice_batch_insert_update_sql(table_name, sql))) {
-      LOG_WARN("failed to splice_batch_insert_sql for table", K(table_name));
-    } else if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    if(dml.get_row_count()>1) {
+      dml.splice_batch_insert_update_sql(table_name, sql);
+    } else {
+      dml.splice_insert_update_sql(table_name, sql);
+    }
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
       LOG_WARN("failed to write for table", K(table_name), KR(ret), K(sql.ptr()));
     } else {
       LOG_INFO("insert rows", K(affected_rows));
@@ -2528,10 +2516,63 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     return ret;
   };
 
-  std::vector<std::function<int(ObISQLClient& sql_client)>> funcs;
-
   std::atomic_int now{0};
   std::atomic_int client_idx{0};
+  std::atomic_int core_all_table_idx{1};
+  std::atomic_int core_all_column_idx{1};
+
+  auto table_count = tables.count();
+  auto work=[&](ObISQLClient& sql_client, int x) {
+    int table_idx=x%table_count, op_idx=x/table_count;
+    LOG_INFO("work", K(table_idx), K(op_idx));
+    auto& table = tables.at(table_idx);
+    ObDMLSqlSplicer dml;
+    switch(op_idx) {
+      case 0: // all_table
+        {
+          add_all_table(dml, table, [](ObDMLSqlSplicer&){return OB_SUCCESS;});
+          if(is_core_table(table.get_table_id())) {
+            ObCoreTableProxyBatch kv(OB_ALL_TABLE_TNAME, sql_client, tenant_id, core_all_table_idx);
+            kv.AddDMLSqlSplicer(dml);
+            exec_sql(sql_client, kv.getDML(), OB_ALL_CORE_TABLE_TNAME);
+          } else {
+            exec_sql(sql_client, dml, OB_ALL_TABLE_TNAME);
+          }
+          add_to_dml_history(dml);
+          exec_sql(sql_client, dml, OB_ALL_TABLE_HISTORY_TNAME);
+          break;
+        }
+      case 1: // all_column
+        {
+          if (!table.is_view_table() || table.view_column_filled()) {
+            if(is_core_table(table.get_table_id())) {
+              ObCoreTableProxyBatch kv(OB_ALL_COLUMN_TNAME, sql_client, tenant_id, core_all_column_idx);
+              add_all_column(dml, table, add_to_kv(kv));
+              kv.AddDMLSqlSplicer(dml);
+              exec_sql(sql_client, kv.getDML(), OB_ALL_CORE_TABLE_TNAME);
+            } else {
+              add_all_column(dml, table, add_to_dml);
+              exec_sql(sql_client, dml, OB_ALL_COLUMN_TNAME);
+            }
+          }
+          break;
+        }
+      case 2: // all_column_history
+        {
+          if (!table.is_view_table() || table.view_column_filled()) {
+            add_all_column(dml, table, add_to_dml_history);
+            exec_sql(sql_client, dml, OB_ALL_COLUMN_HISTORY_TNAME);
+          }
+          break;
+        }
+      case 3: // all_ddl
+        {
+          add_ddl_operation(dml, table, add_to_dml);
+          exec_sql(sql_client, dml, OB_ALL_DDL_OPERATION_TNAME);
+          break;
+        }
+    }
+  };
 
   auto trace_id = ObCurTraceId::get_trace_id();
 
@@ -2540,115 +2581,16 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       ObCurTraceId::set(*trace_id);
     }
     int id = client_idx++;
-    ObISQLClient* client=sql_client[id];
-    auto begin_time = ObTimeUtility::current_time();
+    ObISQLClient& client=*sql_client[id];
     while(true) {
       int i=now++;
-      if(i>=funcs.size()) {
+      LOG_INFO("running", K(i));
+      if(i>=4*table_count) {
         break;
       }
-      LOG_INFO("running funcs", K(i));
-      funcs[i](*client);
-      auto end_time = ObTimeUtility::current_time();
-      auto cost = end_time - begin_time;
-      LOG_INFO("run funcs", K(i), K(cost));
-      begin_time = end_time;
+      work(client, i);
     }
   };
-
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      if (!table.is_view_table() || table.view_column_filled()) {
-        if (is_core_table(table.get_table_id())) {
-          ObDMLSqlSplicer dml;
-          add_all_column(dml, table, add_to_kv(kv_all_column));
-        }
-      }
-    }
-    if (OB_FAIL(exec_sql(sql_client, kv_all_column.getDML(),
-                         OB_ALL_CORE_TABLE_TNAME)))
-      LOG_WARN("failed to add rows to all_core_table");
-    return ret;
-  });
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      if (is_core_table(table.get_table_id())) {
-        ObDMLSqlSplicer dml;
-        add_all_table(dml, table, add_to_kv(kv_all_table));
-      }
-    }
-    if (OB_FAIL(
-            exec_sql(sql_client, kv_all_table.getDML(), OB_ALL_CORE_TABLE_TNAME)))
-      LOG_WARN("failed to add rows to all_core_table");
-    return ret;
-  });
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      if (!table.is_view_table() || table.view_column_filled()) {
-        if (!is_core_table(table.get_table_id())) {
-          add_all_column(dml_all_column, table, add_to_dml);
-        }
-      }
-    }
-    if (OB_FAIL(exec_sql(sql_client, dml_all_column, OB_ALL_COLUMN_TNAME)))
-      LOG_WARN("failed to add rows to all_column");
-    return ret;
-  });
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      if (!table.is_view_table() || table.view_column_filled()) {
-        add_all_column(dml_all_column_history, table, add_to_dml_history);
-      }
-    }
-    if (OB_FAIL(exec_sql(sql_client, dml_all_column_history,
-                         OB_ALL_COLUMN_HISTORY_TNAME)))
-      LOG_WARN("failed to add rows to all_columnh_history");
-    return ret;
-  });
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      auto table_id = table.get_table_id();
-      if (!is_core_table(table_id)) {
-        add_all_table(dml_all_table, table, add_to_dml);
-      }
-    }
-    if (OB_FAIL(exec_sql(sql_client, dml_all_table, OB_ALL_TABLE_TNAME)))
-      LOG_WARN("failed to add rows to all_table");
-    return ret;
-  });
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      auto table_id = table.get_table_id();
-      add_all_table(dml_all_table_history, table, add_to_dml_history);
-    }
-    if (OB_FAIL(exec_sql(sql_client, dml_all_table_history,
-                         OB_ALL_TABLE_HISTORY_TNAME)))
-      LOG_WARN("failed to add rows to all_table_history");
-    return ret;
-  });
-  funcs.push_back([&](ObISQLClient &sql_client) {
-    int ret = OB_SUCCESS;
-    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
-      auto &table = tables.at(i);
-      add_ddl_operation(dml_all_ddl_operation, table, add_to_dml);
-    }
-    if (OB_FAIL(exec_sql(sql_client, dml_all_ddl_operation,
-                         OB_ALL_DDL_OPERATION_TNAME)))
-      LOG_WARN("failed to add rows to all_table_history");
-    return ret;
-  });
 
   OBCreateSchemaParallel csp(create_table);
   if(OB_FAIL(csp.init())){

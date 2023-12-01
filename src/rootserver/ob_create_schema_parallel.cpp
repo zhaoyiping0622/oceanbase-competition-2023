@@ -13,6 +13,7 @@
 #define USING_LOG_PREFIX BOOTSTRAP
 
 namespace oceanbase {
+const int CreateSchemaParallelCnt = 8;
 OBCreateSchemaParallel::OBCreateSchemaParallel(std::function<void()> func)
     : func_(func) {}
 OBCreateSchemaParallel::~OBCreateSchemaParallel() {}
@@ -46,7 +47,7 @@ int OBCreateSchemaParallel::stop() {
 void OBCreateSchemaParallel::wait() { TG_WAIT(tg_id_); }
 void OBCreateSchemaParallel::destroy() { TG_DESTROY(tg_id_); }
 void OBCreateSchemaParallel::run1() {
-  if(cnt_++>=8){
+  if(cnt_++>=CreateSchemaParallelCnt){
     --cnt_;
     return;
   }
