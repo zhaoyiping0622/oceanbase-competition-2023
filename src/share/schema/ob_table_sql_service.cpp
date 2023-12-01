@@ -2425,7 +2425,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   const uint64_t tenant_id = tables.at(0).get_tenant_id();
   LOG_INFO("table count", K(tables.count()));
   const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
-  OB_ZYP_TIME_COUNT_BEGIN(gen_table_dml);
+  OB_ZYP_TIME_COUNT_BEGIN(gen_table_dml); // 0.3s
   ObDMLSqlSplicer dml_all_table;
   ObDMLSqlSplicer dml_all_table_history;
   ObDMLSqlSplicer dml_all_column;
@@ -2510,25 +2510,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     auto &table = tables.at(i);
     auto table_id = table.get_table_id();
     if(is_core_table(table_id)) {
-      ObDMLSqlSplicer dml;
-      add_all_table(dml, table, add_to_kv(kv_all_table));
-    } else {
-      add_all_table(dml_all_table, table, add_to_dml);
-    }
-    add_all_table(dml_all_table_history, table, add_to_dml_history);
-
-    if(!table.is_view_table()||table.view_column_filled()) {
-      if(is_core_table(table_id)) {
-        ObDMLSqlSplicer dml;
-        add_all_column(dml, table, add_to_kv(kv_all_column));
-      } else {
-        add_all_column(dml_all_column, table, add_to_dml);
-      }
-      add_all_column(dml_all_column_history, table, add_to_dml_history);
-    }
-    
-    add_ddl_operation(dml_all_ddl_operation, table, add_to_dml);
-    if(is_core_table(table_id)) {
       last_schema_version = table.get_schema_version();
     }
   }
@@ -2537,7 +2518,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     int ret = OB_SUCCESS;
     int64_t affected_rows;
     ObSqlString sql;
-    if(OB_FAIL(dml.splice_batch_insert_sql(table_name, sql))) {
+    if(OB_FAIL(dml.splice_batch_insert_update_sql(table_name, sql))) {
       LOG_WARN("failed to splice_batch_insert_sql for table", K(table_name));
     } else if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
       LOG_WARN("failed to write for table", K(table_name), KR(ret), K(sql.ptr()));
@@ -2552,10 +2533,15 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   std::atomic_int now{0};
   std::atomic_int client_idx{0};
 
+  auto trace_id = ObCurTraceId::get_trace_id();
+
   auto create_table = [&](){
+    if(trace_id!=nullptr) {
+      ObCurTraceId::set(*trace_id);
+    }
     int id = client_idx++;
-    LOG_INFO("create_table get client", K(id));
     ObISQLClient* client=sql_client[id];
+    auto begin_time = ObTimeUtility::current_time();
     while(true) {
       int i=now++;
       if(i>=funcs.size()) {
@@ -2563,17 +2549,106 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       }
       LOG_INFO("running funcs", K(i));
       funcs[i](*client);
+      auto end_time = ObTimeUtility::current_time();
+      auto cost = end_time - begin_time;
+      LOG_INFO("run funcs", K(i), K(cost));
+      begin_time = end_time;
     }
   };
 
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, kv_all_column.getDML(), OB_ALL_CORE_TABLE_TNAME))) LOG_WARN("failed to add rows to all_core_table"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, kv_all_table.getDML(), OB_ALL_CORE_TABLE_TNAME))) LOG_WARN("failed to add rows to all_core_table"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, dml_all_column, OB_ALL_COLUMN_TNAME))) LOG_WARN("failed to add rows to all_column"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, dml_all_column_history, OB_ALL_COLUMN_HISTORY_TNAME))) LOG_WARN("failed to add rows to all_columnh_history"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, dml_all_table, OB_ALL_TABLE_TNAME))) LOG_WARN("failed to add rows to all_table"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, dml_all_table_history, OB_ALL_TABLE_HISTORY_TNAME))) LOG_WARN("failed to add rows to all_table_history"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS; if(OB_FAIL(exec_sql(sql_client, dml_all_ddl_operation, OB_ALL_DDL_OPERATION_TNAME))) LOG_WARN("failed to add rows to all_table_history"); return ret; });
-  funcs.push_back([&](ObISQLClient& sql_client){  int ret = OB_SUCCESS;  return ret; });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      if (!table.is_view_table() || table.view_column_filled()) {
+        if (is_core_table(table.get_table_id())) {
+          ObDMLSqlSplicer dml;
+          add_all_column(dml, table, add_to_kv(kv_all_column));
+        }
+      }
+    }
+    if (OB_FAIL(exec_sql(sql_client, kv_all_column.getDML(),
+                         OB_ALL_CORE_TABLE_TNAME)))
+      LOG_WARN("failed to add rows to all_core_table");
+    return ret;
+  });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      if (is_core_table(table.get_table_id())) {
+        ObDMLSqlSplicer dml;
+        add_all_table(dml, table, add_to_kv(kv_all_table));
+      }
+    }
+    if (OB_FAIL(
+            exec_sql(sql_client, kv_all_table.getDML(), OB_ALL_CORE_TABLE_TNAME)))
+      LOG_WARN("failed to add rows to all_core_table");
+    return ret;
+  });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      if (!table.is_view_table() || table.view_column_filled()) {
+        if (!is_core_table(table.get_table_id())) {
+          add_all_column(dml_all_column, table, add_to_dml);
+        }
+      }
+    }
+    if (OB_FAIL(exec_sql(sql_client, dml_all_column, OB_ALL_COLUMN_TNAME)))
+      LOG_WARN("failed to add rows to all_column");
+    return ret;
+  });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      if (!table.is_view_table() || table.view_column_filled()) {
+        add_all_column(dml_all_column_history, table, add_to_dml_history);
+      }
+    }
+    if (OB_FAIL(exec_sql(sql_client, dml_all_column_history,
+                         OB_ALL_COLUMN_HISTORY_TNAME)))
+      LOG_WARN("failed to add rows to all_columnh_history");
+    return ret;
+  });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      auto table_id = table.get_table_id();
+      if (!is_core_table(table_id)) {
+        add_all_table(dml_all_table, table, add_to_dml);
+      }
+    }
+    if (OB_FAIL(exec_sql(sql_client, dml_all_table, OB_ALL_TABLE_TNAME)))
+      LOG_WARN("failed to add rows to all_table");
+    return ret;
+  });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      auto table_id = table.get_table_id();
+      add_all_table(dml_all_table_history, table, add_to_dml_history);
+    }
+    if (OB_FAIL(exec_sql(sql_client, dml_all_table_history,
+                         OB_ALL_TABLE_HISTORY_TNAME)))
+      LOG_WARN("failed to add rows to all_table_history");
+    return ret;
+  });
+  funcs.push_back([&](ObISQLClient &sql_client) {
+    int ret = OB_SUCCESS;
+    for (int i = 0; i < tables.count() && OB_SUCC(ret); i++) {
+      auto &table = tables.at(i);
+      add_ddl_operation(dml_all_ddl_operation, table, add_to_dml);
+    }
+    if (OB_FAIL(exec_sql(sql_client, dml_all_ddl_operation,
+                         OB_ALL_DDL_OPERATION_TNAME)))
+      LOG_WARN("failed to add rows to all_table_history");
+    return ret;
+  });
 
   OBCreateSchemaParallel csp(create_table);
   if(OB_FAIL(csp.init())){

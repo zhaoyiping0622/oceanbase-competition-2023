@@ -1010,56 +1010,27 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
 
     std::atomic<int> now{0};
 
-    auto trace_id = ObCurTraceId::get_trace_id();
-    auto create_schema = [&]() {
-      int ret = OB_SUCCESS;
-      if(trace_id != nullptr)  {
-        ObCurTraceId::set(*trace_id);
+    std::vector<ObISQLClient*> sql_clients;
+    for(int i=0;i<8;i++){
+      ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service.get_schema_service(), true, true, false, false);
+      const int64_t refreshed_schema_version = 0;
+      const int tenant_id = OB_SYS_TENANT_ID;
+      if(OB_FAIL(sql_client->start(&ddl_service.get_sql_proxy(), tenant_id, refreshed_schema_version))) {
+        LOG_INFO("failed to start sql_client", KR(ret), K(i));
+      } else {
+        LOG_INFO("start sql_client successfully", K(i));
       }
-      LOG_WARN("in labmda create_schema");
-      while(OB_SUCC(ret)) {
-        int i = now++;
-        LOG_WARN("in while", K(i), K(table_schemas.count()));
-        if(i>=table_schemas.count()) break;
-        if (i % batch_count == 0) {
-          int tail = i + batch_count;
-          if(tail > table_schemas.count()) {
-            tail = table_schemas.count();
-          }
-          LOG_WARN("try to create", K(i), K(tail));
-          int64_t retry_times = 1;
-          while (OB_SUCC(ret)) {
-            if (OB_FAIL(batch_create_schema(ddl_service, table_schemas, i, tail))) {
-              LOG_WARN("batch create schema failed", K(ret), "table count", tail);
-              // bugfix:
-              if ((OB_SCHEMA_EAGAIN == ret
-                   || OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH == ret)
-                  && retry_times <= MAX_RETRY_TIMES) {
-                retry_times++;
-                ret = OB_SUCCESS;
-                LOG_INFO("schema error while create table, need retry", KR(ret), K(retry_times));
-                ob_usleep(1 * 1000 * 1000L); // 1s
-              }
-            } else {
-              break;
-            }
-          }
-        }
-      }
-    };
-    OBCreateSchemaParallel csp(create_schema);
-    if(OB_FAIL(csp.init())){
-      LOG_WARN("failed to init csp", K(ret));
-    } else if(OB_FAIL(csp.start())) {
-      LOG_WARN("failed to start csp", K(ret));
-    } else {
-      LOG_INFO("csp wait begin");
-      csp.wait();
-      LOG_INFO("csp wait done");
-      csp.destroy();
-      LOG_INFO("csp destroy");
+      sql_clients.push_back(sql_client);
     }
-    //OB_ZYP_TIME_COUNT_END(batch_create_schema);
+    ObDDLOperator ddl_operator(ddl_service.get_schema_service(),
+        ddl_service.get_sql_proxy());
+    ddl_operator.create_table_batch(table_schemas, sql_clients);
+    for(int i=0;i<8;i++){
+      if(OB_FAIL(((ObDDLSQLTransaction*)sql_clients[i])->end(true))){
+        LOG_WARN("sql_clients end failed");
+      }
+      OB_DELETE(ObISQLClient, "create_table", sql_clients[i]);
+    }
   }
   LOG_INFO("end create all schemas", K(ret), "table count", table_schemas.count(),
            "time_used", ObTimeUtility::current_time() - begin_time);

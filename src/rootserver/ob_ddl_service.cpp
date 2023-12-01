@@ -23229,7 +23229,7 @@ int ObDDLService::create_sys_table_schemas(
       sql_clients.push_back(sql_client);
     }
     // persist __all_core_table's schema in inner table, which is only used for sys views.
-    ddl_operator.create_table_batch(tables, trans, sql_clients);
+    ddl_operator.create_table_batch(tables, sql_clients);
     for(int i=0;i<8;i++){
       if(OB_FAIL(((ObDDLSQLTransaction*)sql_clients[i])->end(true))){
         LOG_WARN("sql_clients end failed");

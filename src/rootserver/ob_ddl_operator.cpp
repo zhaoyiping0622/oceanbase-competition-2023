@@ -1464,7 +1464,7 @@ int ObDDLOperator::create_user(ObUserInfo &user,
   return ret;
 }
 int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_schemas,
-                                    ObMySQLTransaction &trans, std::vector<ObISQLClient*>& sql_clients){
+                                    std::vector<ObISQLClient*>& sql_clients){
   int ret = OB_SUCCESS;
   ObSchemaService *schema_service = schema_service_.get_schema_service();
   const uint64_t tenant_id = table_schemas.at(0).get_tenant_id();
