@@ -75,12 +75,13 @@ int ObThreadCond::wait_us(const uint64_t time_us)
 {
   int ret = OB_SUCCESS;
   int tmp_ret = 0;
+  const int n_time_us = time_us / 128;
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     COMMON_LOG(WARN, "The thread cond has not been inited, ", K(ret), KCSTRING(lbt()));
   } else {
-    ObWaitEventGuard guard(event_no_, time_us / 1000, reinterpret_cast<int64_t>(this));
-    if (0 == time_us) {
+    ObWaitEventGuard guard(event_no_, n_time_us / 1000, reinterpret_cast<int64_t>(this));
+    if (0 == n_time_us) {
       if (OB_UNLIKELY(0 != (tmp_ret = ob_pthread_cond_wait(&cond_, &mutex_)))) {
         ret = OB_ERR_SYS;
         COMMON_LOG(WARN, "Fail to cond wait, ", K(tmp_ret), K(ret));
@@ -95,8 +96,8 @@ int ObThreadCond::wait_us(const uint64_t time_us)
         uint64_t cur_time = static_cast<uint64_t>(curtime.tv_sec) *
                             static_cast<uint64_t>(1000000) +
                             static_cast<uint64_t>(curtime.tv_usec);
-        uint64_t us = cur_time + time_us;
-        if (us < cur_time || us < time_us) {
+        uint64_t us = cur_time + n_time_us;
+        if (us < cur_time || us < n_time_us) {
           us = UINT64_MAX;
         }
 
@@ -106,7 +107,7 @@ int ObThreadCond::wait_us(const uint64_t time_us)
         if (OB_UNLIKELY(0 != (tmp_ret = ob_pthread_cond_timedwait(&cond_, &mutex_, &abstime)))) {
           if (ETIMEDOUT != tmp_ret) {
             ret = OB_ERR_SYS;
-            COMMON_LOG(WARN, "Fail to timed cond wait, ", K(time_us), K(tmp_ret), K(ret));
+            COMMON_LOG(WARN, "Fail to timed cond wait, ", K(n_time_us), K(tmp_ret), K(ret));
           } else {
             ret = OB_TIMEOUT;
           }

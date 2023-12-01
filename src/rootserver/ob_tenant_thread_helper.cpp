@@ -248,7 +248,7 @@ void ObTenantThreadHelper::run1() {
 void ObTenantThreadHelper::idle(const int64_t idle_time_us)
 {
   ObThreadCondGuard guard(thread_cond_);
-  thread_cond_.wait_us(idle_time_us/100);
+  thread_cond_.wait_us(idle_time_us);
 }
 
 int ObTenantThreadHelper::get_tenant_schema(const uint64_t tenant_id,
