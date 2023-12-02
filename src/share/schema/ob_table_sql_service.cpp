@@ -37,6 +37,7 @@
 #include "sql/ob_sql_utils.h"
 #include "lib/time/ob_time_count.h"
 #include "rootserver/ob_ddl_service.h"
+#include "share/ob_zyp.h"
 
 
 namespace oceanbase
@@ -2360,7 +2361,7 @@ int ObTableSqlService::delete_single_column(
 
 class ObCoreTableProxyBatch {
   public:
-    ObCoreTableProxyBatch(const char* table, ObISQLClient& sql_client, uint64_t tenant_id, std::atomic_int& row_id):
+    ObCoreTableProxyBatch(const char* table, ObISQLClient& sql_client, uint64_t tenant_id, std::atomic_long& row_id):
       table_name_(table), kv_(table, sql_client, tenant_id), row_id_(row_id), tenant_id_(tenant_id) {}
     int AddDMLSqlSplicer(ObDMLSqlSplicer& raw_dml) {
       int ret = OB_SUCCESS;
@@ -2368,7 +2369,7 @@ class ObCoreTableProxyBatch {
       if(OB_FAIL(raw_dml.splice_core_cells(kv_, cells))) {
         LOG_WARN("failed to splice_core_cells", KR(ret));
       } else {
-        int now = row_id_++;
+        long now = row_id_++;
         FOREACH_X(uc, cells, ret==OB_SUCCESS) {
           if(OB_FAIL(dml_.add_pk_column("table_name", table_name_))) {
             LOG_WARN("failed to add table_name", KR(ret));
@@ -2411,7 +2412,7 @@ class ObCoreTableProxyBatch {
     const char* table_name_;
     ObCoreTableProxy kv_;
     ObDMLSqlSplicer dml_;
-    std::atomic_int& row_id_;
+    std::atomic_long& row_id_;
     uint64_t tenant_id_;
 };
 
@@ -2504,9 +2505,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     int64_t affected_rows;
     ObSqlString sql;
     if(dml.get_row_count()>1) {
-      dml.splice_batch_insert_update_sql(table_name, sql);
+      dml.splice_batch_insert_sql(table_name, sql);
     } else {
-      dml.splice_insert_update_sql(table_name, sql);
+      dml.splice_insert_sql(table_name, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
       LOG_WARN("failed to write for table", K(table_name), KR(ret), K(sql.ptr()));
@@ -2518,13 +2519,22 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
 
   std::atomic_int now{0};
   std::atomic_int client_idx{0};
-  std::atomic_int core_all_table_idx{1};
-  std::atomic_int core_all_column_idx{1};
+  std::atomic_long core_all_table_idx;
+  std::atomic_long core_all_column_idx;
+
+  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME,*sql_client[0],tenant_id);
+  kv.load();
+  core_all_table_idx = kv.row_count()+1;
+  kv.~ObCoreTableProxy();
+  new (&kv)ObCoreTableProxy(OB_ALL_COLUMN_TNAME, *sql_client[0], tenant_id);
+  kv.load();
+  core_all_column_idx = kv.row_count()+1;
 
   auto table_count = tables.count();
   auto work=[&](ObISQLClient& sql_client, int x) {
     int table_idx=x%table_count, op_idx=x/table_count;
-    LOG_INFO("work", K(table_idx), K(op_idx));
+    int64_t begin_time = ObTimeUtility::current_time();
+    DEFER({ auto cost = ObTimeUtility::current_time()-begin_time; LOG_INFO("work", K(table_idx), K(op_idx), K(cost)); });
     auto& table = tables.at(table_idx);
     ObDMLSqlSplicer dml;
     switch(op_idx) {
@@ -2577,6 +2587,8 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto trace_id = ObCurTraceId::get_trace_id();
 
   auto create_table = [&](){
+    zyp_enable();
+    DEFER({zyp_disable();});
     if(trace_id!=nullptr) {
       ObCurTraceId::set(*trace_id);
     }
