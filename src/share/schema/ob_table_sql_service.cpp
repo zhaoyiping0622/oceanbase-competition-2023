@@ -2681,7 +2681,7 @@ class ObCoreTableProxyBatch {
 #define varbinary ObString
 #define bigunsigned uint64_t
 
-#define member(a,b) private: ObObj a##_; public: void set_##a(const b& _##a##_) { add_##b(&a##_, _##a##_); } void set_##a##_null() { add_null(&a##_); }
+#define member(a,b) private: ObObj a##_; public: int set_##a(const b& _##a##_) { add_##b(&a##_, _##a##_); return OB_SUCCESS; } int set_##a##_null() { add_null(&a##_); return OB_SUCCESS; }
 
 class ZypRow {
   public:
@@ -2714,6 +2714,7 @@ class ZypRow {
     void add_timestamp(ObObj* obj, int64_t timestamp) {
       obj->set_timestamp(timestamp);
     }
+    size_t to_string(const char* buf, size_t size) const {return 0;}
   private:
     ObArray<ObObj> cells_;
 };
@@ -2869,7 +2870,7 @@ int gen_table_dml(
                                                exec_tenant_id, table.get_tenant_id())))
         || OB_FAIL(t.set_table_id(ObSchemaUtils::get_extract_schema_id(
                                                  exec_tenant_id, table.get_table_id())))
-        || OB_FAIL(t.set_table_name(ObHexEscapeSqlStr(table.get_table_name())))
+        || OB_FAIL(t.set_table_name(table.get_table_name()))
         || OB_FAIL(t.set_database_id(ObSchemaUtils::get_extract_schema_id(
                                                  exec_tenant_id, table.get_database_id())))
         || OB_FAIL(t.set_table_type(table.get_table_type()))
@@ -2884,14 +2885,14 @@ int gen_table_dml(
         || OB_FAIL(t.set_tablet_size(table.get_tablet_size()))
         || OB_FAIL(t.set_pctfree(table.get_pctfree()))
         || OB_FAIL(t.set_autoinc_column_id(table.get_autoinc_column_id()))
-        || OB_FAIL(t.set_auto_increment(share::ObRealUInt64(table.get_auto_increment())))
+        || OB_FAIL(t.set_auto_increment(share::ObRealUInt64(table.get_auto_increment()).value()))
         || OB_FAIL(t.set_read_only(table.is_read_only()))
         || OB_FAIL(t.set_rowkey_split_pos(table.get_rowkey_split_pos()))
-        || OB_FAIL(t.set_compress_func_name(ObHexEscapeSqlStr(table.get_compress_func_name())))
-        || OB_FAIL(t.set_expire_condition(ObHexEscapeSqlStr(expire_info)))
+        || OB_FAIL(t.set_compress_func_name(table.get_compress_func_name()))
+        || OB_FAIL(t.set_expire_condition(expire_info))
         || OB_FAIL(t.set_is_use_bloomfilter(table.is_use_bloomfilter()))
         || OB_FAIL(t.set_index_attributes_set(table.get_index_attributes_set()))
-        || OB_FAIL(t.set_comment(ObHexEscapeSqlStr(table.get_comment())))
+        || OB_FAIL(t.set_comment(table.get_comment()))
         || OB_FAIL(t.set_block_size(table.get_block_size()))
         || OB_FAIL(t.set_collation_type(table.get_collation_type()))
         || OB_FAIL(t.set_data_table_id(ObSchemaUtils::get_extract_schema_id(
@@ -2904,30 +2905,30 @@ int gen_table_dml(
         || OB_FAIL(t.set_index_using_type(table.get_index_using_type()))
         || OB_FAIL(t.set_part_level(table.get_part_level()))
         || OB_FAIL(t.set_part_func_type(part_option.get_part_func_type()))
-        || OB_FAIL(t.set_part_func_expr(ObHexEscapeSqlStr(part_func_expr)))
+        || OB_FAIL(t.set_part_func_expr(part_func_expr))
         || OB_FAIL(t.set_part_num(part_num))
         || OB_FAIL(t.set_sub_part_func_type(sub_part_option.get_part_func_type()))
-        || OB_FAIL(t.set_sub_part_func_expr(ObHexEscapeSqlStr(sub_part_func_expr)))
+        || OB_FAIL(t.set_sub_part_func_expr(sub_part_func_expr))
         || OB_FAIL(t.set_sub_part_num(sub_part_num))
         || OB_FAIL(t.set_schema_version(table.get_schema_version()))
-        || OB_FAIL(t.set_view_definition(ObHexEscapeSqlStr(table.get_view_schema().get_view_definition())))
+        || OB_FAIL(t.set_view_definition(table.get_view_schema().get_view_definition()))
         || OB_FAIL(t.set_view_check_option(table.get_view_schema().get_view_check_option()))
         || OB_FAIL(t.set_view_is_updatable(table.get_view_schema().get_view_is_updatable()))
-        || OB_FAIL(t.set_parser_name(ObHexEscapeSqlStr(table.get_parser_name_str())))
+        || OB_FAIL(t.set_parser_name(table.get_parser_name_str()))
         || OB_FAIL(t.set_gmt_create(now))
         || OB_FAIL(t.set_gmt_modified(now))
         || OB_FAIL(t.set_partition_status(table.get_partition_status()))
         || OB_FAIL(t.set_partition_schema_version(table.get_partition_schema_version()))
-        || OB_FAIL(t.set_pk_comment(ObHexEscapeSqlStr(table.get_pk_comment())))
+        || OB_FAIL(t.set_pk_comment(table.get_pk_comment()))
         || OB_FAIL(t.set_row_store_type(
-                    ObHexEscapeSqlStr(ObStoreFormat::get_row_store_name(table.get_row_store_type()))))
+                    ObStoreFormat::get_row_store_name(table.get_row_store_type())))
         || OB_FAIL(t.set_store_format(
-                    ObHexEscapeSqlStr(ObStoreFormat::get_store_format_name(table.get_store_format()))))
-        || OB_FAIL(t.set_duplicate_scope(table.get_duplicate_scope()))
+                    ObStoreFormat::get_store_format_name(table.get_store_format())))
+        || OB_FAIL(t.set_duplicate_scope(int64_t(table.get_duplicate_scope())))
         || OB_FAIL(t.set_progressive_merge_round(table.get_progressive_merge_round()))
         || OB_FAIL(t.set_storage_format_version(table.get_storage_format_version()))
         || OB_FAIL(t.set_table_mode(table.get_table_mode()))
-        || OB_FAIL(t.set_encryption(ObHexEscapeSqlStr(encryption)))
+        || OB_FAIL(t.set_encryption(encryption))
         || OB_FAIL(t.set_tablespace_id(ObSchemaUtils::get_extract_schema_id(
                                   exec_tenant_id, table.get_tablespace_id())))
         // To avoid compatibility problems (such as error while upgrade virtual schema) in upgrade post stage,
@@ -2951,23 +2952,177 @@ int gen_table_dml(
         || (data_version >= DATA_VERSION_4_1_0_0
             && OB_FAIL(t.set_truncate_version(table.get_truncate_version())))
         || (data_version >= DATA_VERSION_4_2_0_0
-            && OB_FAIL(t.set_external_file_location(ObHexEscapeSqlStr(table.get_external_file_location()))))
+            && OB_FAIL(t.set_external_file_location(table.get_external_file_location())))
         || (data_version >= DATA_VERSION_4_2_0_0
-            && OB_FAIL(t.set_external_file_location_access_info(ObHexEscapeSqlStr(table.get_external_file_location_access_info()))))
+            && OB_FAIL(t.set_external_file_location_access_info(table.get_external_file_location_access_info())))
         || (data_version >= DATA_VERSION_4_2_0_0
-            && OB_FAIL(t.set_external_file_format(ObHexEscapeSqlStr(table.get_external_file_format()))))
+            && OB_FAIL(t.set_external_file_format(table.get_external_file_format())))
         || (data_version >= DATA_VERSION_4_2_0_0
-            && OB_FAIL(t.set_external_file_pattern(ObHexEscapeSqlStr(table.get_external_file_pattern()))))
+            && OB_FAIL(t.set_external_file_pattern(table.get_external_file_pattern())))
         || (data_version >= DATA_VERSION_4_2_1_0
-            && OB_FAIL(t.set_ttl_definition(ObHexEscapeSqlStr(ttl_definition))))
+            && OB_FAIL(t.set_ttl_definition(ttl_definition)))
         || (data_version >= DATA_VERSION_4_2_1_0
-            && OB_FAIL(t.set_kv_attributes(ObHexEscapeSqlStr(kv_attributes))))
+            && OB_FAIL(t.set_kv_attributes(kv_attributes)))
         || (data_version >= DATA_VERSION_4_2_1_0
             && OB_FAIL(t.set_name_generated_type(table.get_name_generated_type())))
         ) {
       LOG_WARN("add column failed", K(ret));
     }
   }
+  return ret;
+}
+template<typename T>
+int gen_column_dml(
+    const uint64_t exec_tenant_id,
+    const ObColumnSchemaV2 &column, T& t)
+{
+  int ret = OB_SUCCESS;
+  ObString orig_default_value;
+  ObString cur_default_value;
+  ObArenaAllocator allocator(ObModIds::OB_SCHEMA_OB_SCHEMA_ARENA);
+  char *extended_type_info_buf = NULL;
+  uint64_t tenant_data_version = 0;
+  if (OB_FAIL(GET_MIN_DATA_VERSION(exec_tenant_id, tenant_data_version))) {
+    LOG_WARN("get tenant data version failed", K(ret));
+  } else if (tenant_data_version < DATA_VERSION_4_2_0_0 &&
+             (column.is_xmltype() || column.get_udt_set_id() != 0 || column.get_sub_data_type() != 0)) {
+    ret = OB_NOT_SUPPORTED;
+    LOG_WARN("tenant data version is less than 4.2, xmltype type is not supported", K(ret), K(tenant_data_version), K(column));
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "tenant data version is less than 4.2, xmltype");
+  } else if (tenant_data_version < DATA_VERSION_4_1_0_0 && ob_is_json(column.get_data_type())) {
+    ret = OB_NOT_SUPPORTED;
+    LOG_WARN("tenant data version is less than 4.1, json type is not supported", K(ret), K(tenant_data_version), K(column));
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "tenant data version is less than 4.1, json type");
+  } else if (tenant_data_version < DATA_VERSION_4_1_0_0 &&
+             (ob_is_geometry(column.get_data_type()) ||
+             column.get_srs_id() != OB_DEFAULT_COLUMN_SRS_ID ||
+             column.is_spatial_generated_column())) {
+    ret = OB_NOT_SUPPORTED;
+    LOG_WARN("tenant data version is less than 4.1, geometry type is not supported", K(ret), K(tenant_data_version), K(column));
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "tenant data version is less than 4.1, geometry type");
+  } else if (OB_FAIL(sql::ObSQLUtils::is_charset_data_version_valid(column.get_charset_type(),
+                                                                    exec_tenant_id))) {
+    LOG_WARN("failed to check charset data version valid", K(ret));
+  } else if (column.is_generated_column() ||
+      column.is_identity_column() ||
+      ob_is_string_type(column.get_data_type()) ||
+      ob_is_json(column.get_data_type()) ||
+      ob_is_geometry(column.get_data_type())) {
+    //The default value of the generated column is the expression definition of the generated column
+    ObString orig_default_value_str = column.get_orig_default_value().get_string();
+    ObString cur_default_value_str = column.get_cur_default_value().get_string();
+    orig_default_value.assign_ptr(orig_default_value_str.ptr(), orig_default_value_str.length());
+    cur_default_value.assign_ptr(cur_default_value_str.ptr(), cur_default_value_str.length());
+    if (!column.get_orig_default_value().is_null() && OB_ISNULL(orig_default_value.ptr())) {
+      orig_default_value.assign_ptr("", 0);
+    }
+    if (!column.get_cur_default_value().is_null() && OB_ISNULL(cur_default_value.ptr())) {
+      cur_default_value.assign_ptr("", 0);
+    }
+  } else {
+    const int64_t value_buf_len = 2 * OB_MAX_DEFAULT_VALUE_LENGTH + 3;
+    char *orig_default_value_buf = NULL;
+    char *cur_default_value_buf = NULL;
+    orig_default_value_buf = static_cast<char *>(allocator.alloc(value_buf_len));
+    cur_default_value_buf = static_cast<char *>(allocator.alloc(value_buf_len));
+    extended_type_info_buf = static_cast<char *>(allocator.alloc(OB_MAX_VARBINARY_LENGTH));
+    lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
+    if (OB_ISNULL(orig_default_value_buf)
+        || OB_ISNULL(cur_default_value_buf)
+        || OB_ISNULL(extended_type_info_buf)) {
+      ret = OB_ALLOCATE_MEMORY_FAILED;
+      LOG_WARN("allocate memory for default value buffer failed");
+    } else if (OB_FAIL(ObCompatModeGetter::get_table_compat_mode(
+               column.get_tenant_id(), column.get_table_id(), compat_mode))) {
+      LOG_WARN("fail to get tenant mode", K(ret), K(column));
+    } else {
+      MEMSET(orig_default_value_buf, 0, value_buf_len);
+      MEMSET(cur_default_value_buf, 0, value_buf_len);
+      MEMSET(extended_type_info_buf, 0, OB_MAX_VARBINARY_LENGTH);
+
+      int64_t orig_default_value_len = 0;
+      int64_t cur_default_value_len = 0;
+      lib::CompatModeGuard compat_mode_guard(compat_mode);
+      ObTimeZoneInfo tz_info;
+      if (OB_FAIL(OTTZ_MGR.get_tenant_tz(exec_tenant_id, tz_info.get_tz_map_wrap()))) {
+        LOG_WARN("get tenant timezone failed", K(ret));
+      } else if (OB_FAIL(column.get_orig_default_value().print_plain_str_literal(
+                      orig_default_value_buf, value_buf_len, orig_default_value_len, &tz_info))) {
+        LOG_WARN("failed to print orig default value", K(ret),
+                 K(value_buf_len), K(orig_default_value_len));
+      } else if (OB_FAIL(column.get_cur_default_value().print_plain_str_literal(
+                             cur_default_value_buf, value_buf_len, cur_default_value_len, &tz_info))) {
+        LOG_WARN("failed to print cur default value",
+                 K(ret), K(value_buf_len), K(cur_default_value_len));
+      } else {
+        orig_default_value.assign_ptr(orig_default_value_buf, static_cast<int32_t>(orig_default_value_len));
+        cur_default_value.assign_ptr(cur_default_value_buf, static_cast<int32_t>(cur_default_value_len));
+      }
+      LOG_TRACE("begin gen_column_dml", K(ret), K(compat_mode), K(orig_default_value), K(cur_default_value),  K(orig_default_value_len), K(cur_default_value_len));
+    }
+  }
+  LOG_TRACE("begin gen_column_dml", K(ret), K(orig_default_value), K(cur_default_value), K(column));
+  if (OB_SUCC(ret)) {
+    ObString cur_default_value_v1;
+    if (column.get_orig_default_value().is_null()) {
+      orig_default_value.reset();
+    }
+    if (column.get_cur_default_value().is_null()) {
+      cur_default_value.reset();
+    }
+    ObString bin_extended_type_info;
+    if (OB_SUCC(ret) && column.is_enum_or_set()) {
+      int64_t pos = 0;
+      extended_type_info_buf = static_cast<char *>(allocator.alloc(OB_MAX_VARBINARY_LENGTH));
+      if (OB_ISNULL(extended_type_info_buf)) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+        LOG_WARN("allocate memory for default value buffer failed");
+      } else if (OB_FAIL(column.serialize_extended_type_info(extended_type_info_buf, OB_MAX_VARBINARY_LENGTH, pos))) {
+        LOG_WARN("fail to serialize_extended_type_info", K(ret));
+      } else {
+        bin_extended_type_info.assign_ptr(extended_type_info_buf, static_cast<int32_t>(pos));
+      }
+    }
+    auto now = ObTimeUtility::fast_current_time();
+    if (OB_SUCC(ret) && (OB_FAIL(t.set_tenant_id(ObSchemaUtils::get_extract_tenant_id(
+                                                    exec_tenant_id, column.get_tenant_id())))
+                         || OB_FAIL(t.set_table_id(ObSchemaUtils::get_extract_schema_id(
+                                                    exec_tenant_id, column.get_table_id())))
+                         || OB_FAIL(t.set_column_id(column.get_column_id()))
+                         || OB_FAIL(t.set_column_name(column.get_column_name()))
+                         || OB_FAIL(t.set_rowkey_position(column.get_rowkey_position()))
+                         || OB_FAIL(t.set_index_position(column.get_index_position()))
+                         || OB_FAIL(t.set_partition_key_position(column.get_tbl_part_key_pos()))
+                         || OB_FAIL(t.set_data_type(column.get_data_type()))
+                         || OB_FAIL(t.set_data_length(column.get_data_length()))
+                         || OB_FAIL(t.set_data_precision(column.get_data_precision()))
+                         || OB_FAIL(t.set_data_scale(column.get_data_scale()))
+                         || OB_FAIL(t.set_zero_fill(column.is_zero_fill()))
+                         || OB_FAIL(t.set_nullable(column.is_nullable()))
+                         || OB_FAIL(t.set_autoincrement(column.is_autoincrement()))
+                         || OB_FAIL(t.set_is_hidden(column.is_hidden()))
+                         || OB_FAIL(t.set_on_update_current_timestamp(column.is_on_update_current_timestamp()))
+                         || OB_FAIL(t.set_orig_default_value_v2(orig_default_value))
+                         || OB_FAIL(t.set_cur_default_value_v2(cur_default_value))
+                         || OB_FAIL(t.set_cur_default_value(cur_default_value_v1))
+                         || OB_FAIL(t.set_order_in_rowkey(column.get_order_in_rowkey()))
+                         || OB_FAIL(t.set_collation_type(column.get_collation_type()))
+                         || OB_FAIL(t.set_comment(column.get_comment()))
+                         || OB_FAIL(t.set_schema_version(column.get_schema_version()))
+                         || OB_FAIL(t.set_column_flags(column.get_stored_column_flags()))
+                         || OB_FAIL(t.set_extended_type_info(bin_extended_type_info))
+                         || OB_FAIL(t.set_prev_column_id(column.get_prev_column_id()))
+                         || (tenant_data_version >= DATA_VERSION_4_1_0_0 && OB_FAIL(t.set_srs_id(column.get_srs_id())))
+                            // todo : tenant_data_version >= DATA_VERSION_4_2_0_0
+                         || (tenant_data_version >= DATA_VERSION_4_2_0_0 && OB_FAIL(t.set_udt_set_id(column.get_udt_set_id())))
+                         || (tenant_data_version >= DATA_VERSION_4_2_0_0 &&OB_FAIL(t.set_sub_data_type(column.get_sub_data_type())))
+                         || OB_FAIL(t.set_gmt_create(now))
+                         || OB_FAIL(t.set_gmt_modified(now)))) {
+      LOG_WARN("dml add column failed", K(ret));
+    }
+  }
+  LOG_DEBUG("gen column dml", K(exec_tenant_id), K(column.get_tenant_id()), K(column.get_table_id()), K(column.get_column_id()),
+            K(column.is_nullable()), K(column.get_stored_column_flags()), K(column.get_column_flags()));
   return ret;
 }
 
@@ -2982,32 +3137,92 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   const uint64_t tenant_id = tables.at(0).get_tenant_id();
   LOG_INFO("table count", K(tables.count()));
   const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
-  ObArray<ZypRow*> core_all_table_rows;
+  ObArray<ObArray<ZypRow*>> all_core_all_table_rows;
+  // ObArray<ZypRow*> all_core_all_table_rows;
   ObArray<ZypRow*> all_table_rows;
   ObArray<ZypRow*> all_column_rows;
   ObArray<ZypRow*> all_table_history_rows;
   ObArray<ZypRow*> all_column_history_rows;
   ObArray<ZypRow*> all_ddl_operation_rows;
-  auto add_all_table = [&](ObDMLSqlSplicer& dml, ObTableSchema& table, std::function<int(ObDMLSqlSplicer&)> end){
-    auto table_id = table.get_table_id();
-    if(OB_FAIL(gen_table_dml(exec_tenant_id, table, false, dml))) {
-      LOG_WARN("fail to gen_table_dml", KR(ret));
-    } else if(OB_FAIL(end(dml))) {
-      LOG_WARN("fail to end all_table", KR(ret));
+
+  auto free_all=[&](ObArray<ZypRow*>&tmp) { for(int i=0;i<tmp.count();i++)OB_DELETE(ZypRow, "create_table", tmp.at(i)); };
+
+  DEFER({free_all(all_table_rows);});
+  DEFER({free_all(all_column_rows);});
+  DEFER({free_all(all_table_history_rows);});
+  DEFER({free_all(all_column_history_rows);});
+  DEFER({free_all(all_ddl_operation_rows);});
+  DEFER({for(int i=0;i<all_core_all_table_rows.count();i++)free_all(all_core_all_table_rows.at(i));});
+
+  std::atomic_long core_all_table_idx;
+  std::atomic_long core_all_column_idx;
+
+  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME,*sql_client[0],tenant_id);
+  kv.load();
+  core_all_table_idx = kv.row_count()+1;
+  kv.~ObCoreTableProxy();
+  new (&kv)ObCoreTableProxy(OB_ALL_COLUMN_TNAME, *sql_client[0], tenant_id);
+  kv.load();
+  core_all_column_idx = kv.row_count()+1;
+
+  for(int i=0;i<tables.count();i++) {
+    auto &table = tables.at(i);
+    ZypAllTableRow* row = OB_NEW(ZypAllTableRow, "create_table");
+    oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
+    if(is_core_table(table.get_table_id())) {
+      auto tmp = row->gen_core_rows(core_all_table_idx);
+      all_core_all_table_rows.push_back(tmp);
+      OB_DELETE(ZypAllTableRow, "create_table", row);
+    } else {
+      all_table_rows.push_back(row);
     }
-  };
-  auto add_all_column = [&](ObDMLSqlSplicer& dml, ObTableSchema& table, std::function<int(ObDMLSqlSplicer&)> end){
+  }
+  for(int i=0;i<tables.count();i++) {
+    auto &table = tables.at(i);
+    ZypAllTableHistoryRow* row = OB_NEW(ZypAllTableHistoryRow, "create_table");
+    oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
+    row->set_is_deleted(0);
+    all_table_history_rows.push_back(row);
+  }
+  for(int i=0;i<tables.count();i++) {
+    auto &table = tables.at(i);
     auto table_id = table.get_table_id();
-    for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
-      ObColumnSchemaV2 column = **it;
-      if(OB_FAIL(gen_column_dml(exec_tenant_id, column, dml))) {
-        LOG_WARN("fail to gen_column_dml all_column", KR(ret));
-      } else if(OB_FAIL(end(dml))) {
-        LOG_WARN("fail to end all_column", KR(ret));
+    if (!table.is_view_table() || table.view_column_filled()) {
+      for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
+        ObColumnSchemaV2 column = **it;
+        ZypAllColumnRow* row = OB_NEW(ZypAllColumnRow, "create_table");
+        if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id, column, *row))) {
+          LOG_WARN("fail to gen_column_dml", KR(ret));
+        } else {
+          if(is_core_table(table_id)) {
+            all_core_all_table_rows.push_back(row->gen_core_rows(core_all_column_idx));
+            OB_DELETE(ZypAllColumnRow, "create_table", row);
+          } else {
+            all_column_rows.push_back(row);
+          }
+        }
       }
     }
-  };
-  auto add_ddl_operation = [&](ObDMLSqlSplicer& dml, ObTableSchema& table, std::function<int(ObDMLSqlSplicer&)> end){
+  }
+  for(int i=0;i<tables.count();i++) {
+    auto &table = tables.at(i);
+    auto table_id = table.get_table_id();
+    if (!table.is_view_table() || table.view_column_filled()) {
+      for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
+        ObColumnSchemaV2 column = **it;
+        ZypAllColumnHistoryRow* row = OB_NEW(ZypAllColumnHistoryRow, "create_table");
+        if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id, column, *row))) {
+          LOG_WARN("fail to gen_column_dml", KR(ret));
+        } else {
+          row->set_is_deleted(0);
+          all_column_history_rows.push_back(row);
+        }
+      }
+    }
+  }
+  for(int i=0;i<tables.count();i++) {
+    ZypAllDDLOperationRow* row = OB_NEW(ZypAllDDLOperationRow, "create_table");
+    auto &table = tables.at(i);
     ObSchemaOperation opt;
     opt.tenant_id_ = tenant_id;
     opt.database_id_ = table.get_database_id();
@@ -3022,37 +3237,22 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     }
     opt.schema_version_ = table.get_schema_version();
     opt.ddl_stmt_str_ = ObString();
-    dml.add_column("schema_version", opt.schema_version_);
-    dml.add_column("tenant_id", is_tenant_operation(opt.op_type_)?opt.tenant_id_:OB_INVALID_TENANT_ID);
-    dml.add_column("exec_tenant_id", exec_tenant_id);
-    dml.add_column("user_id", opt.user_id_);
-    dml.add_column("database_id", opt.database_id_);
-    dml.add_column("database_name", opt.database_name_);
-    dml.add_column("tablegroup_id", opt.tablegroup_id_);
-    dml.add_column("table_id", opt.table_id_);
-    dml.add_column("table_name", opt.table_name_);
-    dml.add_column("operation_type", opt.op_type_);
-    dml.add_column("ddl_stmt_str", "");
-    dml.add_gmt_modified();
-    end(dml);
-  };
-  auto add_to_dml_history = [&](ObDMLSqlSplicer& dml) {
-    uint64_t is_deleted = 0;
-    int ret = OB_SUCCESS;
-    if(OB_FAIL(dml.add_column("is_deleted", is_deleted))) {
-      LOG_WARN("failed to add column is_deleted");
-      return ret;
-    } else return dml.finish_row();
-  };
-  auto add_to_dml=[&](ObDMLSqlSplicer& dml) {
-    return dml.finish_row();
-  };
-  auto add_to_kv=[&](ObCoreTableProxyBatch& kv) {
-    return [&](ObDMLSqlSplicer& dml) {
-      DEFER({ dml.~ObDMLSqlSplicer(); new (&dml)ObDMLSqlSplicer; });
-      return kv.AddDMLSqlSplicer(dml);
-    };
-  };
+    row->set_schema_version(opt.schema_version_);
+    row->set_tenant_id(is_tenant_operation(opt.op_type_)?opt.tenant_id_:OB_INVALID_TENANT_ID);
+    row->set_exec_tenant_id(exec_tenant_id);
+    row->set_user_id(opt.user_id_);
+    row->set_database_id(opt.database_id_);
+    row->set_database_name(opt.database_name_);
+    row->set_tablegroup_id(opt.tablegroup_id_);
+    row->set_table_id(opt.table_id_);
+    row->set_table_name(opt.table_name_);
+    row->set_operation_type(opt.op_type_);
+    row->set_ddl_stmt_str("");
+    auto now = ObTimeUtility::fast_current_time();
+    row->set_gmt_modified(now);
+    row->set_gmt_create(now);
+    all_ddl_operation_rows.push_back(row);
+  }
   int64_t last_schema_version;
   for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
     auto &table = tables.at(i);
@@ -3080,70 +3280,8 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
 
   std::atomic_int now{0};
   std::atomic_int client_idx{0};
-  std::atomic_long core_all_table_idx;
-  std::atomic_long core_all_column_idx;
-
-  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME,*sql_client[0],tenant_id);
-  kv.load();
-  core_all_table_idx = kv.row_count()+1;
-  kv.~ObCoreTableProxy();
-  new (&kv)ObCoreTableProxy(OB_ALL_COLUMN_TNAME, *sql_client[0], tenant_id);
-  kv.load();
-  core_all_column_idx = kv.row_count()+1;
 
   auto table_count = tables.count();
-  auto work=[&](ObISQLClient& sql_client, int x) {
-    int table_idx=x%table_count, op_idx=x/table_count;
-    int64_t begin_time = ObTimeUtility::current_time();
-    DEFER({ auto cost = ObTimeUtility::current_time()-begin_time; LOG_INFO("work", K(table_idx), K(op_idx), K(cost)); });
-    auto& table = tables.at(table_idx);
-    ObDMLSqlSplicer dml;
-    switch(op_idx) {
-      case 0: // all_table
-        {
-          add_all_table(dml, table, [](ObDMLSqlSplicer&){return OB_SUCCESS;});
-          if(is_core_table(table.get_table_id())) {
-            ObCoreTableProxyBatch kv(OB_ALL_TABLE_TNAME, sql_client, tenant_id, core_all_table_idx);
-            kv.AddDMLSqlSplicer(dml);
-            exec_sql(sql_client, kv.getDML(), OB_ALL_CORE_TABLE_TNAME);
-          } else {
-            exec_sql(sql_client, dml, OB_ALL_TABLE_TNAME);
-          }
-          add_to_dml_history(dml);
-          exec_sql(sql_client, dml, OB_ALL_TABLE_HISTORY_TNAME);
-          break;
-        }
-      case 1: // all_column
-        {
-          if (!table.is_view_table() || table.view_column_filled()) {
-            if(is_core_table(table.get_table_id())) {
-              ObCoreTableProxyBatch kv(OB_ALL_COLUMN_TNAME, sql_client, tenant_id, core_all_column_idx);
-              add_all_column(dml, table, add_to_kv(kv));
-              kv.AddDMLSqlSplicer(dml);
-              exec_sql(sql_client, kv.getDML(), OB_ALL_CORE_TABLE_TNAME);
-            } else {
-              add_all_column(dml, table, add_to_dml);
-              exec_sql(sql_client, dml, OB_ALL_COLUMN_TNAME);
-            }
-          }
-          break;
-        }
-      case 2: // all_column_history
-        {
-          if (!table.is_view_table() || table.view_column_filled()) {
-            add_all_column(dml, table, add_to_dml_history);
-            exec_sql(sql_client, dml, OB_ALL_COLUMN_HISTORY_TNAME);
-          }
-          break;
-        }
-      case 3: // all_ddl
-        {
-          add_ddl_operation(dml, table, add_to_dml);
-          exec_sql(sql_client, dml, OB_ALL_DDL_OPERATION_TNAME);
-          break;
-        }
-    }
-  };
 
   auto trace_id = ObCurTraceId::get_trace_id();
 
@@ -3161,7 +3299,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       if(i>=4*table_count) {
         break;
       }
-      work(client, i);
+      // TODO(zhaoyiping):
     }
   };
 
