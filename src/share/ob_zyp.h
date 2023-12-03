@@ -24,8 +24,8 @@ class ZypRow {
     using ObArray = oceanbase::common::ObArray<T>;
     using ObString = oceanbase::common::ObString;
     virtual void init_objs() = 0;
-    virtual ObObj* get_cells() = 0;
-    virtual size_t get_cells_cnt() = 0;
+    virtual ObObj* get_cells() const = 0;
+    virtual size_t get_cells_cnt() const = 0;
     oceanbase::common::ObNewRow new_row();
     virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long &row_id) = 0;
     virtual ~ZypRow() {}
@@ -38,8 +38,6 @@ class ZypRow {
     void add_null(ObObj* obj);
     void add_timestamp(ObObj* obj, int64_t timestamp);
     size_t to_string(const char* buf, size_t size) const {return 0;}
-  private:
-    ObArray<ObObj> cells_;
 };
 
 class ZypInsertInfo {
@@ -60,8 +58,8 @@ public:
     return ret;
   }
 private:
-  ObArray<ZypRow*>& array_;
+  const ObArray<ZypRow*>& array_;
   std::atomic_long idx_;
 };
 
-extern __thread ZypInsertInfo* zyp_insert_info;
+extern thread_local ZypInsertInfo* zyp_insert_info;

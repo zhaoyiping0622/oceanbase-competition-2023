@@ -25,13 +25,13 @@ void zyp_unlimit_log(const char* buf, size_t size) {
 
 bool zyp_enabled(){return zyp_come;}
 
-__thread ZypInsertInfo* zyp_insert_info = nullptr;
+thread_local ZypInsertInfo* zyp_insert_info = nullptr;
 
 using namespace oceanbase::common;
 
 void ZypRow::add_varchar(ObObj* obj, const ObString&s) {
   if(s.ptr() == NULL) {
-    obj->set_varchar("");
+    // obj->set_varchar("");
   } else {
     obj->set_varchar(s);
   }
@@ -39,17 +39,19 @@ void ZypRow::add_varchar(ObObj* obj, const ObString&s) {
 }
 void ZypRow::add_varbinary(ObObj* obj, const ObString&s) {
   if(s.ptr() == NULL) {
-    obj->set_varbinary("");
+    // obj->set_varbinary("");
   } else {
     obj->set_varbinary(s);
   }
+  obj->set_collation_type(CS_TYPE_BINARY);
 }
 void ZypRow::add_longtext(ObObj* obj, const ObString&s) {
   if(s.ptr() == NULL) {
-    obj->set_string(oceanbase::ObLongTextType, "");
+    // obj->set_string(oceanbase::ObLongTextType, "");
   } else {
     obj->set_string(oceanbase::ObLongTextType, s);
   }
+  obj->set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
 }
 void ZypRow::add_bigint(ObObj* obj, int64_t v) {
   obj->set_int(v);
@@ -67,3 +69,4 @@ void ZypRow::add_timestamp(ObObj* obj, int64_t timestamp) {
   obj->set_timestamp(timestamp);
 }
 ObNewRow ZypRow::new_row() { init_objs(); return ObNewRow(get_cells(), get_cells_cnt()); }
+

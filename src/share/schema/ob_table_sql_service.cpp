@@ -2416,262 +2416,262 @@ class ObCoreTableProxyBatch {
     uint64_t tenant_id_;
 };
 
-#define ZYP_ALL_CORE_TABLE_OP(ZYP_OP)\
-  ZYP_OP(table_name,varchar)\
-  ZYP_OP(row_id,bigint)\
-  ZYP_OP(column_name,varchar)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(column_value,varchar)
+#define ZYP_ALL_CORE_TABLE_OP(ZYP_OP,...)\
+  ZYP_OP(table_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(row_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(column_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(gmt_create,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(gmt_modified,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(column_value,varchar,1,__VA_ARGS__)\
 
-#define ZYP_ALL_TABLE_OP(ZYP_OP)\
-  ZYP_OP(tenant_id,bigint)\
-  ZYP_OP(table_id,bigint)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(table_name,varchar)\
-  ZYP_OP(database_id,bigint)\
-  ZYP_OP(table_type,bigint)\
-  ZYP_OP(load_type,bigint)\
-  ZYP_OP(def_type,bigint)\
-  ZYP_OP(rowkey_column_num,bigint)\
-  ZYP_OP(index_column_num,bigint)\
-  ZYP_OP(max_used_column_id,bigint)\
-  ZYP_OP(autoinc_column_id,bigint)\
-  ZYP_OP(auto_increment,bigunsigned)\
-  ZYP_OP(read_only,bigint)\
-  ZYP_OP(rowkey_split_pos,bigint)\
-  ZYP_OP(compress_func_name,varchar)\
-  ZYP_OP(expire_condition,varchar)\
-  ZYP_OP(is_use_bloomfilter,bigint)\
-  ZYP_OP(comment,varchar)\
-  ZYP_OP(block_size,bigint)\
-  ZYP_OP(collation_type,bigint)\
-  ZYP_OP(data_table_id,bigint)\
-  ZYP_OP(index_status,bigint)\
-  ZYP_OP(tablegroup_id,bigint)\
-  ZYP_OP(progressive_merge_num,bigint)\
-  ZYP_OP(index_type,bigint)\
-  ZYP_OP(part_level,bigint)\
-  ZYP_OP(part_func_type,bigint)\
-  ZYP_OP(part_func_expr,varchar)\
-  ZYP_OP(part_num,bigint)\
-  ZYP_OP(sub_part_func_type,bigint)\
-  ZYP_OP(sub_part_func_expr,varchar)\
-  ZYP_OP(sub_part_num,bigint)\
-  ZYP_OP(schema_version,bigint)\
-  ZYP_OP(view_definition,longtext)\
-  ZYP_OP(view_check_option,bigint)\
-  ZYP_OP(view_is_updatable,bigint)\
-  ZYP_OP(index_using_type,bigint)\
-  ZYP_OP(parser_name,varchar)\
-  ZYP_OP(index_attributes_set,bigint)\
-  ZYP_OP(tablet_size,bigint)\
-  ZYP_OP(pctfree,bigint)\
-  ZYP_OP(partition_status,bigint)\
-  ZYP_OP(partition_schema_version,bigint)\
-  ZYP_OP(session_id,bigint)\
-  ZYP_OP(pk_comment,varchar)\
-  ZYP_OP(sess_active_time,bigint)\
-  ZYP_OP(row_store_type,varchar)\
-  ZYP_OP(store_format,varchar)\
-  ZYP_OP(duplicate_scope,bigint)\
-  ZYP_OP(progressive_merge_round,bigint)\
-  ZYP_OP(storage_format_version,bigint)\
-  ZYP_OP(table_mode,bigint)\
-  ZYP_OP(encryption,varchar)\
-  ZYP_OP(tablespace_id,bigint)\
-  ZYP_OP(sub_part_template_flags,bigint)\
-  ZYP_OP(dop,bigint)\
-  ZYP_OP(character_set_client,bigint)\
-  ZYP_OP(collation_connection,bigint)\
-  ZYP_OP(auto_part_size,bigint)\
-  ZYP_OP(auto_part,tinyint)\
-  ZYP_OP(association_table_id,bigint)\
-  ZYP_OP(tablet_id,bigint)\
-  ZYP_OP(max_dependency_version,bigint)\
-  ZYP_OP(define_user_id,bigint)\
-  ZYP_OP(transition_point,varchar)\
-  ZYP_OP(b_transition_point,varchar)\
-  ZYP_OP(interval_range,varchar)\
-  ZYP_OP(b_interval_range,varchar)\
-  ZYP_OP(object_status,bigint)\
-  ZYP_OP(table_flags,bigint)\
-  ZYP_OP(truncate_version,bigint)\
-  ZYP_OP(external_file_location,varbinary)\
-  ZYP_OP(external_file_location_access_info,varbinary)\
-  ZYP_OP(external_file_format,varbinary)\
-  ZYP_OP(external_file_pattern,varbinary)\
-  ZYP_OP(ttl_definition,varchar)\
-  ZYP_OP(kv_attributes,varchar)\
-  ZYP_OP(name_generated_type,bigint)
+#define ZYP_ALL_TABLE_OP(ZYP_OP,...)\
+  ZYP_OP(tenant_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(gmt_create,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(gmt_modified,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(table_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(database_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(load_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(def_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(rowkey_column_num,bigint,0,__VA_ARGS__)\
+  ZYP_OP(index_column_num,bigint,0,__VA_ARGS__)\
+  ZYP_OP(max_used_column_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(autoinc_column_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(auto_increment,bigunsigned,1,__VA_ARGS__)\
+  ZYP_OP(read_only,bigint,0,__VA_ARGS__)\
+  ZYP_OP(rowkey_split_pos,bigint,0,__VA_ARGS__)\
+  ZYP_OP(compress_func_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(expire_condition,varchar,0,__VA_ARGS__)\
+  ZYP_OP(is_use_bloomfilter,bigint,0,__VA_ARGS__)\
+  ZYP_OP(comment,varchar,0,__VA_ARGS__)\
+  ZYP_OP(block_size,bigint,0,__VA_ARGS__)\
+  ZYP_OP(collation_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(data_table_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(index_status,bigint,0,__VA_ARGS__)\
+  ZYP_OP(tablegroup_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(progressive_merge_num,bigint,0,__VA_ARGS__)\
+  ZYP_OP(index_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(part_level,bigint,0,__VA_ARGS__)\
+  ZYP_OP(part_func_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(part_func_expr,varchar,0,__VA_ARGS__)\
+  ZYP_OP(part_num,bigint,0,__VA_ARGS__)\
+  ZYP_OP(sub_part_func_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(sub_part_func_expr,varchar,0,__VA_ARGS__)\
+  ZYP_OP(sub_part_num,bigint,0,__VA_ARGS__)\
+  ZYP_OP(schema_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(view_definition,longtext,0,__VA_ARGS__)\
+  ZYP_OP(view_check_option,bigint,0,__VA_ARGS__)\
+  ZYP_OP(view_is_updatable,bigint,0,__VA_ARGS__)\
+  ZYP_OP(index_using_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(parser_name,varchar,1,__VA_ARGS__)\
+  ZYP_OP(index_attributes_set,bigint,1,__VA_ARGS__)\
+  ZYP_OP(tablet_size,bigint,0,__VA_ARGS__)\
+  ZYP_OP(pctfree,bigint,0,__VA_ARGS__)\
+  ZYP_OP(partition_status,bigint,1,__VA_ARGS__)\
+  ZYP_OP(partition_schema_version,bigint,1,__VA_ARGS__)\
+  ZYP_OP(session_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(pk_comment,varchar,0,__VA_ARGS__)\
+  ZYP_OP(sess_active_time,bigint,1,__VA_ARGS__)\
+  ZYP_OP(row_store_type,varchar,1,__VA_ARGS__)\
+  ZYP_OP(store_format,varchar,1,__VA_ARGS__)\
+  ZYP_OP(duplicate_scope,bigint,1,__VA_ARGS__)\
+  ZYP_OP(progressive_merge_round,bigint,1,__VA_ARGS__)\
+  ZYP_OP(storage_format_version,bigint,1,__VA_ARGS__)\
+  ZYP_OP(table_mode,bigint,0,__VA_ARGS__)\
+  ZYP_OP(encryption,varchar,1,__VA_ARGS__)\
+  ZYP_OP(tablespace_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(sub_part_template_flags,bigint,0,__VA_ARGS__)\
+  ZYP_OP(dop,bigint,0,__VA_ARGS__)\
+  ZYP_OP(character_set_client,bigint,0,__VA_ARGS__)\
+  ZYP_OP(collation_connection,bigint,0,__VA_ARGS__)\
+  ZYP_OP(auto_part_size,bigint,0,__VA_ARGS__)\
+  ZYP_OP(auto_part,tinyint,0,__VA_ARGS__)\
+  ZYP_OP(association_table_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(tablet_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(max_dependency_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(define_user_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(transition_point,varchar,1,__VA_ARGS__)\
+  ZYP_OP(b_transition_point,varchar,1,__VA_ARGS__)\
+  ZYP_OP(interval_range,varchar,1,__VA_ARGS__)\
+  ZYP_OP(b_interval_range,varchar,1,__VA_ARGS__)\
+  ZYP_OP(object_status,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_flags,bigint,0,__VA_ARGS__)\
+  ZYP_OP(truncate_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(external_file_location,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(external_file_location_access_info,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(external_file_format,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(external_file_pattern,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(ttl_definition,varchar,0,__VA_ARGS__)\
+  ZYP_OP(kv_attributes,varchar,0,__VA_ARGS__)\
+  ZYP_OP(name_generated_type,bigint,0,__VA_ARGS__)\
 
-#define ZYP_ALL_COLUMN_OP(ZYP_OP)\
-  ZYP_OP(tenant_id,bigint)\
-  ZYP_OP(table_id,bigint)\
-  ZYP_OP(column_id,bigint)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(column_name,varchar)\
-  ZYP_OP(rowkey_position,bigint)\
-  ZYP_OP(index_position,bigint)\
-  ZYP_OP(order_in_rowkey,bigint)\
-  ZYP_OP(partition_key_position,bigint)\
-  ZYP_OP(data_type,bigint)\
-  ZYP_OP(data_length,bigint)\
-  ZYP_OP(data_precision,bigint)\
-  ZYP_OP(data_scale,bigint)\
-  ZYP_OP(zero_fill,bigint)\
-  ZYP_OP(nullable,bigint)\
-  ZYP_OP(on_update_current_timestamp,bigint)\
-  ZYP_OP(autoincrement,bigint)\
-  ZYP_OP(is_hidden,bigint)\
-  ZYP_OP(collation_type,bigint)\
-  ZYP_OP(orig_default_value,varchar)\
-  ZYP_OP(cur_default_value,varchar)\
-  ZYP_OP(comment,longtext)\
-  ZYP_OP(schema_version,bigint)\
-  ZYP_OP(column_flags,bigint)\
-  ZYP_OP(prev_column_id,bigint)\
-  ZYP_OP(extended_type_info,varbinary)\
-  ZYP_OP(orig_default_value_v2,varbinary)\
-  ZYP_OP(cur_default_value_v2,varbinary)\
-  ZYP_OP(srs_id,bigint)\
-  ZYP_OP(udt_set_id,bigint)\
-  ZYP_OP(sub_data_type,bigint)
+#define ZYP_ALL_COLUMN_OP(ZYP_OP,...)\
+  ZYP_OP(tenant_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(column_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(gmt_create,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(gmt_modified,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(column_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(rowkey_position,bigint,0,__VA_ARGS__)\
+  ZYP_OP(index_position,bigint,0,__VA_ARGS__)\
+  ZYP_OP(order_in_rowkey,bigint,0,__VA_ARGS__)\
+  ZYP_OP(partition_key_position,bigint,0,__VA_ARGS__)\
+  ZYP_OP(data_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(data_length,bigint,0,__VA_ARGS__)\
+  ZYP_OP(data_precision,bigint,1,__VA_ARGS__)\
+  ZYP_OP(data_scale,bigint,1,__VA_ARGS__)\
+  ZYP_OP(zero_fill,bigint,0,__VA_ARGS__)\
+  ZYP_OP(nullable,bigint,0,__VA_ARGS__)\
+  ZYP_OP(on_update_current_timestamp,bigint,0,__VA_ARGS__)\
+  ZYP_OP(autoincrement,bigint,0,__VA_ARGS__)\
+  ZYP_OP(is_hidden,bigint,0,__VA_ARGS__)\
+  ZYP_OP(collation_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(orig_default_value,varchar,1,__VA_ARGS__)\
+  ZYP_OP(cur_default_value,varchar,1,__VA_ARGS__)\
+  ZYP_OP(comment,longtext,1,__VA_ARGS__)\
+  ZYP_OP(schema_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(column_flags,bigint,0,__VA_ARGS__)\
+  ZYP_OP(prev_column_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(extended_type_info,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(orig_default_value_v2,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(cur_default_value_v2,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(srs_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(udt_set_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(sub_data_type,bigint,0,__VA_ARGS__)\
 
-#define ZYP_ALL_TABLE_HISTORY_OP(ZYP_OP)\
-  ZYP_OP(tenant_id,bigint)\
-  ZYP_OP(table_id,bigint)\
-  ZYP_OP(schema_version,bigint)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(is_deleted,bigint)\
-  ZYP_OP(table_name,varchar)\
-  ZYP_OP(database_id,bigint)\
-  ZYP_OP(table_type,bigint)\
-  ZYP_OP(load_type,bigint)\
-  ZYP_OP(def_type,bigint)\
-  ZYP_OP(rowkey_column_num,bigint)\
-  ZYP_OP(index_column_num,bigint)\
-  ZYP_OP(max_used_column_id,bigint)\
-  ZYP_OP(autoinc_column_id,bigint)\
-  ZYP_OP(auto_increment,bigunsigned)\
-  ZYP_OP(read_only,bigint)\
-  ZYP_OP(rowkey_split_pos,bigint)\
-  ZYP_OP(compress_func_name,varchar)\
-  ZYP_OP(expire_condition,varchar)\
-  ZYP_OP(is_use_bloomfilter,bigint)\
-  ZYP_OP(comment,varchar)\
-  ZYP_OP(block_size,bigint)\
-  ZYP_OP(collation_type,bigint)\
-  ZYP_OP(data_table_id,bigint)\
-  ZYP_OP(index_status,bigint)\
-  ZYP_OP(tablegroup_id,bigint)\
-  ZYP_OP(progressive_merge_num,bigint)\
-  ZYP_OP(index_type,bigint)\
-  ZYP_OP(part_level,bigint)\
-  ZYP_OP(part_func_type,bigint)\
-  ZYP_OP(part_func_expr,varchar)\
-  ZYP_OP(part_num,bigint)\
-  ZYP_OP(sub_part_func_type,bigint)\
-  ZYP_OP(sub_part_func_expr,varchar)\
-  ZYP_OP(sub_part_num,bigint)\
-  ZYP_OP(view_definition,longtext)\
-  ZYP_OP(view_check_option,bigint)\
-  ZYP_OP(view_is_updatable,bigint)\
-  ZYP_OP(index_using_type,bigint)\
-  ZYP_OP(parser_name,varchar)\
-  ZYP_OP(index_attributes_set,bigint)\
-  ZYP_OP(tablet_size,bigint)\
-  ZYP_OP(pctfree,bigint)\
-  ZYP_OP(partition_status,bigint)\
-  ZYP_OP(partition_schema_version,bigint)\
-  ZYP_OP(session_id,bigint)\
-  ZYP_OP(pk_comment,varchar)\
-  ZYP_OP(sess_active_time,bigint)\
-  ZYP_OP(row_store_type,varchar)\
-  ZYP_OP(store_format,varchar)\
-  ZYP_OP(duplicate_scope,bigint)\
-  ZYP_OP(progressive_merge_round,bigint)\
-  ZYP_OP(storage_format_version,bigint)\
-  ZYP_OP(table_mode,bigint)\
-  ZYP_OP(encryption,varchar)\
-  ZYP_OP(tablespace_id,bigint)\
-  ZYP_OP(sub_part_template_flags,bigint)\
-  ZYP_OP(dop,bigint)\
-  ZYP_OP(character_set_client,bigint)\
-  ZYP_OP(collation_connection,bigint)\
-  ZYP_OP(auto_part_size,bigint)\
-  ZYP_OP(auto_part,tinyint)\
-  ZYP_OP(association_table_id,bigint)\
-  ZYP_OP(tablet_id,bigint)\
-  ZYP_OP(max_dependency_version,bigint)\
-  ZYP_OP(define_user_id,bigint)\
-  ZYP_OP(transition_point,varchar)\
-  ZYP_OP(b_transition_point,varchar)\
-  ZYP_OP(interval_range,varchar)\
-  ZYP_OP(b_interval_range,varchar)\
-  ZYP_OP(object_status,bigint)\
-  ZYP_OP(table_flags,bigint)\
-  ZYP_OP(truncate_version,bigint)\
-  ZYP_OP(external_file_location,varbinary)\
-  ZYP_OP(external_file_location_access_info,varbinary)\
-  ZYP_OP(external_file_format,varbinary)\
-  ZYP_OP(external_file_pattern,varbinary)\
-  ZYP_OP(ttl_definition,varchar)\
-  ZYP_OP(kv_attributes,varchar)\
-  ZYP_OP(name_generated_type,bigint)
+#define ZYP_ALL_TABLE_HISTORY_OP(ZYP_OP,...)\
+  ZYP_OP(tenant_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(schema_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(gmt_create,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(gmt_modified,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(is_deleted,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_name,varchar,1,__VA_ARGS__)\
+  ZYP_OP(database_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(table_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(load_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(def_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(rowkey_column_num,bigint,1,__VA_ARGS__)\
+  ZYP_OP(index_column_num,bigint,1,__VA_ARGS__)\
+  ZYP_OP(max_used_column_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(autoinc_column_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(auto_increment,bigunsigned,1,__VA_ARGS__)\
+  ZYP_OP(read_only,bigint,1,__VA_ARGS__)\
+  ZYP_OP(rowkey_split_pos,bigint,1,__VA_ARGS__)\
+  ZYP_OP(compress_func_name,varchar,1,__VA_ARGS__)\
+  ZYP_OP(expire_condition,varchar,1,__VA_ARGS__)\
+  ZYP_OP(is_use_bloomfilter,bigint,1,__VA_ARGS__)\
+  ZYP_OP(comment,varchar,1,__VA_ARGS__)\
+  ZYP_OP(block_size,bigint,1,__VA_ARGS__)\
+  ZYP_OP(collation_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(data_table_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(index_status,bigint,1,__VA_ARGS__)\
+  ZYP_OP(tablegroup_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(progressive_merge_num,bigint,1,__VA_ARGS__)\
+  ZYP_OP(index_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(part_level,bigint,1,__VA_ARGS__)\
+  ZYP_OP(part_func_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(part_func_expr,varchar,1,__VA_ARGS__)\
+  ZYP_OP(part_num,bigint,1,__VA_ARGS__)\
+  ZYP_OP(sub_part_func_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(sub_part_func_expr,varchar,1,__VA_ARGS__)\
+  ZYP_OP(sub_part_num,bigint,1,__VA_ARGS__)\
+  ZYP_OP(view_definition,longtext,1,__VA_ARGS__)\
+  ZYP_OP(view_check_option,bigint,1,__VA_ARGS__)\
+  ZYP_OP(view_is_updatable,bigint,1,__VA_ARGS__)\
+  ZYP_OP(index_using_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(parser_name,varchar,1,__VA_ARGS__)\
+  ZYP_OP(index_attributes_set,bigint,1,__VA_ARGS__)\
+  ZYP_OP(tablet_size,bigint,1,__VA_ARGS__)\
+  ZYP_OP(pctfree,bigint,1,__VA_ARGS__)\
+  ZYP_OP(partition_status,bigint,1,__VA_ARGS__)\
+  ZYP_OP(partition_schema_version,bigint,1,__VA_ARGS__)\
+  ZYP_OP(session_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(pk_comment,varchar,1,__VA_ARGS__)\
+  ZYP_OP(sess_active_time,bigint,1,__VA_ARGS__)\
+  ZYP_OP(row_store_type,varchar,1,__VA_ARGS__)\
+  ZYP_OP(store_format,varchar,1,__VA_ARGS__)\
+  ZYP_OP(duplicate_scope,bigint,1,__VA_ARGS__)\
+  ZYP_OP(progressive_merge_round,bigint,1,__VA_ARGS__)\
+  ZYP_OP(storage_format_version,bigint,1,__VA_ARGS__)\
+  ZYP_OP(table_mode,bigint,1,__VA_ARGS__)\
+  ZYP_OP(encryption,varchar,1,__VA_ARGS__)\
+  ZYP_OP(tablespace_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(sub_part_template_flags,bigint,1,__VA_ARGS__)\
+  ZYP_OP(dop,bigint,1,__VA_ARGS__)\
+  ZYP_OP(character_set_client,bigint,1,__VA_ARGS__)\
+  ZYP_OP(collation_connection,bigint,1,__VA_ARGS__)\
+  ZYP_OP(auto_part_size,bigint,1,__VA_ARGS__)\
+  ZYP_OP(auto_part,tinyint,1,__VA_ARGS__)\
+  ZYP_OP(association_table_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(tablet_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(max_dependency_version,bigint,1,__VA_ARGS__)\
+  ZYP_OP(define_user_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(transition_point,varchar,1,__VA_ARGS__)\
+  ZYP_OP(b_transition_point,varchar,1,__VA_ARGS__)\
+  ZYP_OP(interval_range,varchar,1,__VA_ARGS__)\
+  ZYP_OP(b_interval_range,varchar,1,__VA_ARGS__)\
+  ZYP_OP(object_status,bigint,1,__VA_ARGS__)\
+  ZYP_OP(table_flags,bigint,1,__VA_ARGS__)\
+  ZYP_OP(truncate_version,bigint,1,__VA_ARGS__)\
+  ZYP_OP(external_file_location,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(external_file_location_access_info,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(external_file_format,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(external_file_pattern,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(ttl_definition,varchar,1,__VA_ARGS__)\
+  ZYP_OP(kv_attributes,varchar,1,__VA_ARGS__)\
+  ZYP_OP(name_generated_type,bigint,1,__VA_ARGS__)\
 
-#define ZYP_ALL_COLUMN_HISTORY_OP(ZYP_OP)\
-  ZYP_OP(tenant_id,bigint)\
-  ZYP_OP(table_id,bigint)\
-  ZYP_OP(column_id,bigint)\
-  ZYP_OP(schema_version,bigint)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(is_deleted,bigint)\
-  ZYP_OP(column_name,varchar)\
-  ZYP_OP(rowkey_position,bigint)\
-  ZYP_OP(index_position,bigint)\
-  ZYP_OP(order_in_rowkey,bigint)\
-  ZYP_OP(partition_key_position,bigint)\
-  ZYP_OP(data_type,bigint)\
-  ZYP_OP(data_length,bigint)\
-  ZYP_OP(data_precision,bigint)\
-  ZYP_OP(data_scale,bigint)\
-  ZYP_OP(zero_fill,bigint)\
-  ZYP_OP(nullable,bigint)\
-  ZYP_OP(on_update_current_timestamp,bigint)\
-  ZYP_OP(autoincrement,bigint)\
-  ZYP_OP(is_hidden,bigint)\
-  ZYP_OP(collation_type,bigint)\
-  ZYP_OP(orig_default_value,varchar)\
-  ZYP_OP(cur_default_value,varchar)\
-  ZYP_OP(comment,longtext)\
-  ZYP_OP(column_flags,bigint)\
-  ZYP_OP(prev_column_id,bigint)\
-  ZYP_OP(extended_type_info,varbinary)\
-  ZYP_OP(orig_default_value_v2,varbinary)\
-  ZYP_OP(cur_default_value_v2,varbinary)\
-  ZYP_OP(srs_id,bigint)\
-  ZYP_OP(udt_set_id,bigint)\
-  ZYP_OP(sub_data_type,bigint)
+#define ZYP_ALL_COLUMN_HISTORY_OP(ZYP_OP,...)\
+  ZYP_OP(tenant_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(column_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(schema_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(gmt_create,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(gmt_modified,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(is_deleted,bigint,0,__VA_ARGS__)\
+  ZYP_OP(column_name,varchar,1,__VA_ARGS__)\
+  ZYP_OP(rowkey_position,bigint,1,__VA_ARGS__)\
+  ZYP_OP(index_position,bigint,1,__VA_ARGS__)\
+  ZYP_OP(order_in_rowkey,bigint,1,__VA_ARGS__)\
+  ZYP_OP(partition_key_position,bigint,1,__VA_ARGS__)\
+  ZYP_OP(data_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(data_length,bigint,1,__VA_ARGS__)\
+  ZYP_OP(data_precision,bigint,1,__VA_ARGS__)\
+  ZYP_OP(data_scale,bigint,1,__VA_ARGS__)\
+  ZYP_OP(zero_fill,bigint,1,__VA_ARGS__)\
+  ZYP_OP(nullable,bigint,1,__VA_ARGS__)\
+  ZYP_OP(on_update_current_timestamp,bigint,1,__VA_ARGS__)\
+  ZYP_OP(autoincrement,bigint,1,__VA_ARGS__)\
+  ZYP_OP(is_hidden,bigint,1,__VA_ARGS__)\
+  ZYP_OP(collation_type,bigint,1,__VA_ARGS__)\
+  ZYP_OP(orig_default_value,varchar,1,__VA_ARGS__)\
+  ZYP_OP(cur_default_value,varchar,1,__VA_ARGS__)\
+  ZYP_OP(comment,longtext,1,__VA_ARGS__)\
+  ZYP_OP(column_flags,bigint,1,__VA_ARGS__)\
+  ZYP_OP(prev_column_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(extended_type_info,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(orig_default_value_v2,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(cur_default_value_v2,varbinary,1,__VA_ARGS__)\
+  ZYP_OP(srs_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(udt_set_id,bigint,1,__VA_ARGS__)\
+  ZYP_OP(sub_data_type,bigint,1,__VA_ARGS__)\
 
-#define ZYP_ALL_DDL_OPERATION_OP(ZYP_OP)\
-  ZYP_OP(schema_version,bigint)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(tenant_id,bigint)\
-  ZYP_OP(user_id,bigint)\
-  ZYP_OP(database_id,bigint)\
-  ZYP_OP(database_name,varchar)\
-  ZYP_OP(tablegroup_id,bigint)\
-  ZYP_OP(table_id,bigint)\
-  ZYP_OP(table_name,varchar)\
-  ZYP_OP(operation_type,bigint)\
-  ZYP_OP(ddl_stmt_str,longtext)\
-  ZYP_OP(exec_tenant_id,bigint)
+#define ZYP_ALL_DDL_OPERATION_OP(ZYP_OP,...)\
+  ZYP_OP(schema_version,bigint,0,__VA_ARGS__)\
+  ZYP_OP(gmt_create,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(gmt_modified,timestamp,1,__VA_ARGS__)\
+  ZYP_OP(tenant_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(user_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(database_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(database_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(tablegroup_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_id,bigint,0,__VA_ARGS__)\
+  ZYP_OP(table_name,varchar,0,__VA_ARGS__)\
+  ZYP_OP(operation_type,bigint,0,__VA_ARGS__)\
+  ZYP_OP(ddl_stmt_str,longtext,0,__VA_ARGS__)\
+  ZYP_OP(exec_tenant_id,bigint,0,__VA_ARGS__)\
 
 #define timestamp int64_t
 #define bigint int64_t
@@ -2681,92 +2681,103 @@ class ObCoreTableProxyBatch {
 #define varbinary ObString
 #define bigunsigned uint64_t
 
-ObString ZypToString(const ObString& s) { return s; } 
+static oceanbase::ModulePageAllocator *zyp_allocator;
 
 ObString ZypToString(int8_t v) {
   char buf[32];
-  sprintf(buf, "%u", v);
-  return buf;
+  int nr = sprintf(buf, "%u", v)+1;
+  char* ret = (char*)zyp_allocator->alloc(nr);
+  memcpy(ret, buf, nr);
+  return ObString(ret);
 } 
 
 ObString ZypToString(uint64_t v) {
   char buf[32];
-  sprintf(buf, "%lu", v);
-  return buf;
+  int nr = sprintf(buf, "%lu", v)+1;
+  char* ret = (char*)zyp_allocator->alloc(nr);
+  memcpy(ret, buf, nr);
+  return ObString(ret);
 } 
 
 ObString ZypToString(int64_t v) {
   char buf[32];
-  sprintf(buf, "%ld", v);
-  return buf;
+  int nr = sprintf(buf, "%ld", v)+1;
+  char* ret = (char*)zyp_allocator->alloc(nr);
+  memcpy(ret, buf, nr);
+  return ObString(ret);
+} 
+ObString ZypToString(const ObString& v) {
+  return v;
+}
+
+ObString ZypCopyString(const ObString& v) {
+  auto nr = strlen(v.ptr())+1;
+  char* ret = (char*)zyp_allocator->alloc(nr);
+  strcpy(ret, v.ptr());
+  return ObString(ret);
 } 
 
-ObString ZypToString_timestamp(const ObObj& obj) { 
-  auto ret = ZypToString(obj.get_timestamp());
-  if(ret.ptr()[0]!='1') {
-    LOG_INFO("shit\n");
-  }
-  return ret;
-}
-ObString ZypToString_bigint(const ObObj& obj) { 
-  auto ret = ZypToString(obj.get_int());
-  if((unsigned char)(ret.ptr()[0])>127) {
-    LOG_INFO("shit\n");
-  }
-  return ret;
-}
-ObString ZypToString_varchar(const ObObj& obj) { 
-  auto ret = obj.get_varchar();
-  if((unsigned char)(ret.ptr()[0])>127) {
-    LOG_INFO("shit\n");
-  }
-  return ret;
-}
-ObString ZypToString_longtext(const ObObj& obj) { return obj.get_varchar(); }
-ObString ZypToString_tinyint(const ObObj& obj) { return ZypToString(obj.get_tinyint()); }
-ObString ZypToString_varbinary(const ObObj& obj) { return obj.get_varbinary(); }
-ObString ZypToString_bigunsigned(const ObObj& obj) { return ZypToString(obj.get_uint64()); }
-
-#define row_cnt(a,b) +1
+#define row_cnt(...) +1
 
 #define member_name(a) a##_member_
 #define member_obj_name(a) a##_member_obj_
 #define member_is_null_name(a) a##_member_is_null_
+#define member_is_nullable_name(a) a##_member_is_nullable_
 #define set_member_name(a) set_##a
+#define get_member_name(a) get_##a
 #define set_member_null_name(a) set_##a##_null
 #define init_obj_name(a) init_obj_##a
 
-#define to_core_row(x,y) \
+#define to_core_row(x,y,...) \
   tmp=OB_NEW(ZypAllCoreTableRow, "core_row");\
   tmp->set_gmt_create(now);\
   tmp->set_gmt_modified(now);\
   tmp->set_table_name(_table_name_);\
   tmp->set_row_id(row);\
   tmp->set_column_name(#x);\
-  if(member_is_null_name(x)) tmp->set_column_value_null();\
-  else tmp->set_column_value(ZypToString(member_name(x)));\
+  if(strcmp(#x, "gmt_create")==0||strcmp(#x, "gmt_modified")==0) \
+    tmp->set_column_value("now(6)"); \
+  else if(member_is_null_name(x)) tmp->set_member_null_name(column_value)();\
+  else tmp->set_member_name(column_value)(ZypToString(member_name(x)));\
   ret[cnt++]=tmp;
 
-#define member(a,b) \
+// 之后加一个no copy的接口
+#define member(a,b,...) \
   private:\
     b member_name(a);\
     bool member_is_null_name(a){true};\
+    static const bool member_is_nullable_name(a);\
   public:\
-    int set_member_name(a)(const b& tmp) { member_name(a) = tmp; member_is_null_name(a)=false; return OB_SUCCESS; }\
-    int set_member_null_name(a)() { member_is_null_name(a)=true; return OB_SUCCESS; }
+    int set_member_name(a)(const b& tmp) {\
+      if(member_is_nullable_name(a) && need_set_null(tmp)) { \
+        set_member_null_name(a)();\
+      } else { \
+        member_name(a) = copy(tmp);\
+        member_is_null_name(a)=false; \
+      }\
+      return OB_SUCCESS; \
+    }\
+    int set_member_null_name(a)() { member_is_null_name(a)=true; return OB_SUCCESS; }\
+    b& get_member_name(a)() { return member_name(a); }
 
-#define member_obj(a,b) \
+#define member_static_null(a,b,c,d,...) \
+  const bool d::member_is_nullable_name(a)=c;
+
+#define member_obj(a,b,...) \
   private: \
-    ObObj member_obj_name(a); \
+    ObObj *member_obj_name(a); \
     void init_obj_name(a)() { \
       if(member_is_null_name(a)) { \
-        add_null(&member_obj_name(a)); \
+        add_null(member_obj_name(a)); \
       } else { \
-        add_##b(&member_obj_name(a), member_name(a)); \
+        add_##b(member_obj_name(a), member_name(a)); \
       } \
     }
 
-#define init_obj(a,b) init_obj_name(a)();
+#define init_obj(a,...) init_obj_name(a)();
+
+#define member_obj_point_init(a,...) \
+  member_obj_name(a)=&objs.at(now++);
 
 #define TABLE_CLASS_DECLARE(class_name, table_name, table_rows) \
   class class_name : public ZypRow { \
@@ -2774,10 +2785,22 @@ ObString ZypToString_bigunsigned(const ObObj& obj) { return ZypToString(obj.get_
     table_rows(member);\
     ObObj begin;\
     table_rows(member_obj);\
+    ObArray<ObObj> objs; \
   public:\
+    class_name() { \
+      objs.prepare_allocate(get_cells_cnt()); \
+      int now=0;\
+      table_rows(member_obj_point_init);\
+    }     \
     virtual void init_objs() { table_rows(init_obj); }\
-    virtual ObObj* get_cells() { return &begin+1; }\
-    virtual size_t get_cells_cnt() { return table_rows(row_cnt); }\
+    virtual ObObj* get_cells() const { return objs.get_data(); }\
+    virtual size_t get_cells_cnt() const { return table_rows(row_cnt); }\
+    template<typename T>\
+    bool need_set_null(const T&) { return false; }\
+    bool need_set_null(const ObString&t) { return t.ptr() == nullptr; }\
+    template<typename T> \
+    T copy(const T&t) { return t; }  \
+    ObString copy(const ObString&t) { return ZypCopyString(t); } \
     virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) {\
       auto now = ObTimeUtility::fast_current_time();\
       int64_t row = row_id++;\
@@ -2789,7 +2812,8 @@ ObString ZypToString_bigunsigned(const ObObj& obj) { return ZypToString(obj.get_
       return ret;\
     }\
   }; \
-  const char* class_name::_table_name_ = table_name;
+  const char* class_name::_table_name_ = table_name; \
+  table_rows(member_static_null, class_name);
 
 TABLE_CLASS_DECLARE(ZypAllCoreTableRow, "__all_core_table", ZYP_ALL_CORE_TABLE_OP);
 TABLE_CLASS_DECLARE(ZypAllTableRow, "__all_table", ZYP_ALL_TABLE_OP);
@@ -2818,7 +2842,7 @@ int gen_table_dml(
 {
   auto now = ObTimeUtility::current_time();
   int ret = OB_SUCCESS;
-  uint64_t data_version = 0;
+  uint64_t data_version = DATA_VERSION_4_2_1_0;
   if (OB_SUCC(ret)) {
     const ObPartitionOption &part_option = table.get_part_option();
     const ObPartitionOption &sub_part_option = table.get_sub_part_option();
@@ -3034,6 +3058,9 @@ int gen_column_dml(
       LOG_TRACE("begin gen_column_dml", K(ret), K(compat_mode), K(orig_default_value), K(cur_default_value),  K(orig_default_value_len), K(cur_default_value_len));
     }
   }
+  if(strcmp(column.get_column_name(), "auto_increment") == 0 && column.get_table_id() == 3) {
+    LOG_INFO("zyp target", K(orig_default_value.ptr()==nullptr), K(orig_default_value), K(cur_default_value), K(cur_default_value.ptr()==nullptr));
+  }
   LOG_TRACE("begin gen_column_dml", K(ret), K(orig_default_value), K(cur_default_value), K(column));
   if (OB_SUCC(ret)) {
     ObString cur_default_value_v1;
@@ -3101,6 +3128,8 @@ int gen_column_dml(
 
 int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &tables,
                        std::vector<common::ObISQLClient*> &sql_client) {
+  zyp_allocator = OB_NEW(ModulePageAllocator, "allocator");
+  DEFER({OB_DELETE(ModulePageAllocator, "allocator", zyp_allocator);});
   OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
   int64_t start_usec = ObTimeUtility::current_time();
@@ -3110,7 +3139,8 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   const uint64_t tenant_id = tables.at(0).get_tenant_id();
   LOG_INFO("table count", K(tables.count()));
   const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
-  ObArray<ZypRow*> all_core_all_table_rows;
+  LOG_INFO("create_table_batch", K(tenant_id), K(exec_tenant_id));
+  ObArray<ZypRow*> all_core_table_rows;
   // ObArray<ZypRow*> all_core_all_table_rows;
   ObArray<ZypRow*> all_table_rows;
   ObArray<ZypRow*> all_column_rows;
@@ -3120,12 +3150,12 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
 
   auto free_all=[&](ObArray<ZypRow*>&tmp) { for(int i=0;i<tmp.count();i++)OB_DELETE(ZypRow, "create_table", tmp.at(i)); };
 
+  DEFER({free_all(all_core_table_rows);});
   DEFER({free_all(all_table_rows);});
   DEFER({free_all(all_column_rows);});
   DEFER({free_all(all_table_history_rows);});
   DEFER({free_all(all_column_history_rows);});
   DEFER({free_all(all_ddl_operation_rows);});
-  DEFER({free_all(all_core_all_table_rows);});
 
   std::atomic_long core_all_table_idx;
   std::atomic_long core_all_column_idx;
@@ -3138,24 +3168,40 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   kv.load();
   core_all_column_idx = kv.row_count()+1;
 
+  ObArray<int> view_idxs;
+
+  ObDMLSqlSplicer dml_all_table, dml_all_table_history;
+
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
-    ZypAllTableRow* row = OB_NEW(ZypAllTableRow, "create_table");
-    oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
-    if(is_core_table(table.get_table_id())) {
-      auto tmp = row->gen_core_rows(core_all_table_idx);
-      for(int i=0;i<tmp.count();i++)all_core_all_table_rows.push_back(tmp.at(i));
-      OB_DELETE(ZypAllTableRow, "create_table", row);
+    if(table.is_view_table()) {
+      gen_table_dml(exec_tenant_id, table, false, dml_all_table);
+      dml_all_table.finish_row();
     } else {
-      all_table_rows.push_back(row);
+      ZypAllTableRow* row = OB_NEW(ZypAllTableRow, "create_table");
+      oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
+      if(is_core_table(table.get_table_id())) {
+        auto tmp = row->gen_core_rows(core_all_table_idx);
+        for(int i=0;i<tmp.count();i++)all_core_table_rows.push_back(tmp.at(i));
+        OB_DELETE(ZypAllTableRow, "create_table", row);
+      } else {
+        all_table_rows.push_back(row);
+      }
     }
   }
+
+  LOG_INFO("zyp view_idxs", K(view_idxs));
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
-    ZypAllTableHistoryRow* row = OB_NEW(ZypAllTableHistoryRow, "create_table");
-    oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
-    row->set_is_deleted(0);
-    all_table_history_rows.push_back(row);
+    if(table.is_view_table()) {
+      gen_table_dml(exec_tenant_id, table, false, dml_all_table_history);
+      dml_all_table_history.finish_row();
+    } else {
+      ZypAllTableHistoryRow* row = OB_NEW(ZypAllTableHistoryRow, "create_table");
+      oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
+      row->set_is_deleted(0);
+      all_table_history_rows.push_back(row);
+    }
   }
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
@@ -3169,7 +3215,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
         } else {
           if(is_core_table(table_id)) {
             auto tmp=row->gen_core_rows(core_all_column_idx);
-            for(int i=0;i<tmp.count();i++)all_core_all_table_rows.push_back(tmp.at(i));
+            for(int i=0;i<tmp.count();i++)all_core_table_rows.push_back(tmp.at(i));
             OB_DELETE(ZypAllColumnRow, "create_table", row);
           } else {
             all_column_rows.push_back(row);
@@ -3177,6 +3223,15 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
         }
       }
     }
+  }
+  for(int i=0;i<all_core_table_rows.count();i++) {
+    auto *row = (ZypAllCoreTableRow*)all_core_table_rows.at(i);
+    char buf[8192];
+    char*p = buf;
+    auto new_row = row->new_row();
+    p+=new_row.to_string(p, 8192);
+    p+=sprintf(p, "\n");
+    // zyp_unlimit_log(buf, p-buf);
   }
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
@@ -3194,6 +3249,8 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       }
     }
   }
+
+  auto now = ObTimeUtility::current_time();
   for(int i=0;i<tables.count();i++) {
     ZypAllDDLOperationRow* row = OB_NEW(ZypAllDDLOperationRow, "create_table");
     auto &table = tables.at(i);
@@ -3222,43 +3279,54 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     row->set_table_name(opt.table_name_);
     row->set_operation_type(opt.op_type_);
     row->set_ddl_stmt_str("");
-    auto now = ObTimeUtility::fast_current_time();
     row->set_gmt_modified(now);
     row->set_gmt_create(now);
     all_ddl_operation_rows.push_back(row);
   }
-  int64_t last_schema_version;
-  for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
-    auto &table = tables.at(i);
-    auto table_id = table.get_table_id();
-    if(is_core_table(table_id)) {
-      last_schema_version = table.get_schema_version();
-    }
-  }
+
+  LOG_INFO("zyp count ", 
+      K(all_core_table_rows.count()),
+      K(all_table_rows.count()),
+      K(all_column_rows.count()),
+      K(all_table_history_rows.count()),
+      K(all_column_history_rows.count()),
+      K(all_ddl_operation_rows.count()));
 
   auto run_insert_all_core_table=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    sql_client.write("INSERT INTO __all_core_table (table_name, row_id, column_name, column_value) VALUES  ('__all_schema_status', 1, 'tenant_id', '1')", affected_rows);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, "INSERT INTO __all_core_table (table_name, row_id, column_name, column_value) VALUES  ('__all_schema_status', 1, 'tenant_id', '1')", affected_rows))) {
+        LOG_INFO("run_insert_all_core_table failed", KR(ret));
+        }
   };
   auto run_insert_all_table_history=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    sql_client.write("INSERT INTO __all_table_history (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type, is_deleted) VALUES (0, 100003, X'5F5F6964785F335F6964785F74625F6E616D65', 201001, 5, 0, 0, 3, 1, 20, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 3, 2, 202001, 0, 1, 0, 0, 0, X'', 1, 0, X'', 0, 1701567770476688, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 100003 , 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0, 0)", affected_rows);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, "INSERT INTO __all_table_history (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type, is_deleted) VALUES (0, 3, X'5F5F616C6C5F7461626C65', 201001, 0, 0, 0, 2, 0, 95, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 0, 1, 202001, 0, 0, 0, 0, 0, X'', 1, 0, X'', 0, 1701585820069968, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 3, 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0, 0)", affected_rows))) {
+        LOG_INFO("run_insert_all_table_history failed", KR(ret));
+    }
   };
   auto run_insert_all_table=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    sql_client.write("INSERT INTO __all_table (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type) VALUES (0, 60102, X'5F5F616C6C5F757365725F6175785F6C6F625F7069656365', 201001, 12, 0, 0, 1, 0, 18, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 102, 1, 202001, 0, 0, 0, 0, 0, X'', 1, 0, X'', 0, 1701567770476808, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 60102, 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0)", affected_rows);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, "INSERT INTO __all_table (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type) VALUES (0, 60102, X'5F5F616C6C5F757365725F6175785F6C6F625F7069656365', 201001, 12, 0, 0, 1, 0, 18, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 102, 1, 202001, 0, 0, 0, 0, 0, X'', 1, 0, X'', 0, 1701567770476808, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 60102, 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0)", affected_rows))) {
+        LOG_INFO("run_insert_all_table failed", KR(ret));
+    }
   };
   auto run_insert_all_column=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    sql_client.write("INSERT INTO __all_column (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified) VALUES (0,101036,23,X'6E616D65',1,1,0,22,64,-1,-1,0,0,0,0,0,NULL,NULL,NULL,0,45,X'',0,0,NULL,0,-32,0,0,now(6),now(6))", affected_rows);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, "INSERT INTO __all_column (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified) VALUES (0,101036,23,X'6E616D65',1,1,0,22,64,-1,-1,0,0,0,0,0,NULL,NULL,NULL,0,45,X'',0,0,NULL,0,-32,0,0,now(6),now(6))", affected_rows))) {
+        LOG_INFO("run_insert_all_column failed", KR(ret));
+    }
   };
   auto run_insert_all_column_history=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    sql_client.write("INSERT INTO __all_column_history (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified, is_deleted) VALUES (0,12218,16,X'74656E616E745F6964',1,0,0,5,0,20,0,0,0,0,0,0,NULL,NULL,NULL,0,63,X'',0,0,NULL,0,-32,0,0,now(6),now(6),0)", affected_rows);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, "INSERT INTO __all_column_history (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified, is_deleted) VALUES (0,12218,16,X'74656E616E745F6964',1,0,0,5,0,20,0,0,0,0,0,0,NULL,NULL,NULL,0,63,X'',0,0,NULL,0,-32,0,0,now(6),now(6),0)", affected_rows))) {
+        LOG_INFO("run_insert_all_column_history failed", KR(ret));
+    }
   };
   auto run_insert_all_ddl_operation=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    sql_client.write("INSERT INTO __all_ddl_operation (schema_version, tenant_id, exec_tenant_id, user_id, database_id, database_name, tablegroup_id, table_id, table_name, operation_type, ddl_stmt_str, gmt_modified) VALUES (1701567770476696, 0, 1, 0, 201001, '', 202001, 50003, '', 4, '', now(6))", affected_rows);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, "INSERT INTO __all_ddl_operation (schema_version, tenant_id, exec_tenant_id, user_id, database_id, database_name, tablegroup_id, table_id, table_name, operation_type, ddl_stmt_str, gmt_modified) VALUES (1701567770476696, 0, 1, 0, 201001, '', 202001, 50003, '', 4, '', now(6))", affected_rows))) {
+        LOG_INFO("run_insert_all_ddl_operation failed", KR(ret));
+    }
   };
 
   std::atomic_int client_idx{0};
@@ -3268,7 +3336,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto trace_id = ObCurTraceId::get_trace_id();
 
   std::vector<ZypInsertInfo*> insert_info={
-    OB_NEW(ZypInsertInfo, "insert_info", all_core_all_table_rows),
+    OB_NEW(ZypInsertInfo, "insert_info", all_core_table_rows),
     OB_NEW(ZypInsertInfo, "insert_info", all_table_history_rows),
     OB_NEW(ZypInsertInfo, "insert_info", all_table_rows),
     OB_NEW(ZypInsertInfo, "insert_info", all_column_rows),
@@ -3293,6 +3361,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       auto t = insert_info[i]->count();
       if(t>0&&t>max_count)max_count=t, ret=i;
     }
+    LOG_INFO("find_max_idx", K(ret), K(max_count));
     return ret;
   };
 
@@ -3307,7 +3376,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
 
     auto run=[&](int idx) {
       ::zyp_insert_info = insert_info[idx];
+      LOG_INFO("::zyp_insert_info", K(::zyp_insert_info));
       run_insert[idx](client);
+      LOG_INFO("insert done", K(idx));
     };
 
     if(id<run_insert.size()) run(id);
@@ -3326,12 +3397,33 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     LOG_WARN("failed to start csp", K(ret));
   } else {
     LOG_INFO("csp wait begin");
+    auto& client = sql_client.at(sql_client.size()-1);
+    ObSqlString sql;
+    dml_all_table.splice_insert_sql(OB_ALL_TABLE_TNAME, sql);
+    int64_t affected_rows;
+    if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
+      LOG_INFO("failed to insert __all_table");
+    }
+    dml_all_table.splice_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
+    if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
+      LOG_INFO("failed to insert __all_table_history");
+    }
+    int64_t last_schema_version;
+    for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
+      auto &table = tables.at(i);
+      auto table_id = table.get_table_id();
+      if(is_core_table(table_id)) {
+        last_schema_version = table.get_schema_version();
+      }
+    }
     csp.wait();
     LOG_INFO("csp wait done");
     csp.destroy();
     LOG_INFO("csp destroy");
+    if(OB_FAIL(log_core_operation(*sql_client[0], exec_tenant_id, last_schema_version))) {
+      LOG_WARN("failed to update last_schema_version", KR(ret), K(last_schema_version), K(exec_tenant_id));
+    }
   }
-  if(OB_FAIL(log_core_operation(*sql_client[0], exec_tenant_id, last_schema_version))) LOG_WARN("failed to update last_schema_version");
   return ret;
 }
 
