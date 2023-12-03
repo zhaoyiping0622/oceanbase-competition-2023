@@ -2417,18 +2417,18 @@ class ObCoreTableProxyBatch {
 };
 
 #define ZYP_ALL_CORE_TABLE_OP(ZYP_OP)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(table_name,varchar)\
   ZYP_OP(row_id,bigint)\
   ZYP_OP(column_name,varchar)\
+  ZYP_OP(gmt_create,timestamp)\
+  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(column_value,varchar)
 
 #define ZYP_ALL_TABLE_OP(ZYP_OP)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(tenant_id,bigint)\
   ZYP_OP(table_id,bigint)\
+  ZYP_OP(gmt_create,timestamp)\
+  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(table_name,varchar)\
   ZYP_OP(database_id,bigint)\
   ZYP_OP(table_type,bigint)\
@@ -2507,11 +2507,11 @@ class ObCoreTableProxyBatch {
   ZYP_OP(name_generated_type,bigint)
 
 #define ZYP_ALL_COLUMN_OP(ZYP_OP)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(tenant_id,bigint)\
   ZYP_OP(table_id,bigint)\
   ZYP_OP(column_id,bigint)\
+  ZYP_OP(gmt_create,timestamp)\
+  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(column_name,varchar)\
   ZYP_OP(rowkey_position,bigint)\
   ZYP_OP(index_position,bigint)\
@@ -2541,11 +2541,11 @@ class ObCoreTableProxyBatch {
   ZYP_OP(sub_data_type,bigint)
 
 #define ZYP_ALL_TABLE_HISTORY_OP(ZYP_OP)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(tenant_id,bigint)\
   ZYP_OP(table_id,bigint)\
   ZYP_OP(schema_version,bigint)\
+  ZYP_OP(gmt_create,timestamp)\
+  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(is_deleted,bigint)\
   ZYP_OP(table_name,varchar)\
   ZYP_OP(database_id,bigint)\
@@ -2624,12 +2624,12 @@ class ObCoreTableProxyBatch {
   ZYP_OP(name_generated_type,bigint)
 
 #define ZYP_ALL_COLUMN_HISTORY_OP(ZYP_OP)\
-  ZYP_OP(gmt_create,timestamp)\
-  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(tenant_id,bigint)\
   ZYP_OP(table_id,bigint)\
   ZYP_OP(column_id,bigint)\
   ZYP_OP(schema_version,bigint)\
+  ZYP_OP(gmt_create,timestamp)\
+  ZYP_OP(gmt_modified,timestamp)\
   ZYP_OP(is_deleted,bigint)\
   ZYP_OP(column_name,varchar)\
   ZYP_OP(rowkey_position,bigint)\
@@ -2659,9 +2659,9 @@ class ObCoreTableProxyBatch {
   ZYP_OP(sub_data_type,bigint)
 
 #define ZYP_ALL_DDL_OPERATION_OP(ZYP_OP)\
+  ZYP_OP(schema_version,bigint)\
   ZYP_OP(gmt_create,timestamp)\
   ZYP_OP(gmt_modified,timestamp)\
-  ZYP_OP(schema_version,bigint)\
   ZYP_OP(tenant_id,bigint)\
   ZYP_OP(user_id,bigint)\
   ZYP_OP(database_id,bigint)\
@@ -2680,52 +2680,6 @@ class ObCoreTableProxyBatch {
 #define tinyint int8_t
 #define varbinary ObString
 #define bigunsigned uint64_t
-
-#define member(a,b) private: ObObj a##_; public: int set_##a(const b& _##a##_) { add_##b(&a##_, _##a##_); return OB_SUCCESS; } int set_##a##_null() { add_null(&a##_); return OB_SUCCESS; }
-
-class ZypRow {
-  public:
-    virtual ObObj* get_cells() = 0;
-    virtual size_t get_cells_cnt() = 0;
-    ObNewRow new_row() { return ObNewRow(get_cells(), get_cells_cnt()); }
-    virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long &row_id) = 0;
-    virtual ~ZypRow() {}
-    void add_varchar(ObObj* obj, const ObString&s) {
-      obj->set_varchar(s);
-    }
-    void add_varbinary(ObObj* obj, const ObString&s) {
-      obj->set_varbinary(s);
-    }
-    void add_longtext(ObObj* obj, const ObString&s) {
-      obj->set_string(ObLongTextType, s);
-    }
-    void add_bigint(ObObj* obj, int64_t v) {
-      obj->set_int(v);
-    }
-    void add_tinyint(ObObj* obj, int8_t v) {
-      obj->set_tinyint(v);
-    }
-    void add_bigunsigned(ObObj* obj, uint64_t v) {
-      obj->set_uint64(v);
-    }
-    void add_null(ObObj* obj) {
-      obj->set_null();
-    }
-    void add_timestamp(ObObj* obj, int64_t timestamp) {
-      obj->set_timestamp(timestamp);
-    }
-    size_t to_string(const char* buf, size_t size) const {return 0;}
-  private:
-    ObArray<ObObj> cells_;
-};
-
-class ZypAllCoreTableRow : public ZypRow {
-  ZYP_ALL_CORE_TABLE_OP(member);
-public:
-  virtual ObObj* get_cells() { return &gmt_create_; }
-  virtual size_t get_cells_cnt() { return 6; }
-  virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) { return {}; }
-};
 
 ObString ZypToString(const ObString& s) { return s; } 
 
@@ -2747,83 +2701,102 @@ ObString ZypToString(int64_t v) {
   return buf;
 } 
 
-ObString ZypToString_timestamp(const ObObj& obj) { return ZypToString(obj.get_timestamp()); }
-ObString ZypToString_bigint(const ObObj& obj) { return ZypToString(obj.get_int()); }
-ObString ZypToString_varchar(const ObObj& obj) { return obj.get_varchar(); }
+ObString ZypToString_timestamp(const ObObj& obj) { 
+  auto ret = ZypToString(obj.get_timestamp());
+  if(ret.ptr()[0]!='1') {
+    LOG_INFO("shit\n");
+  }
+  return ret;
+}
+ObString ZypToString_bigint(const ObObj& obj) { 
+  auto ret = ZypToString(obj.get_int());
+  if((unsigned char)(ret.ptr()[0])>127) {
+    LOG_INFO("shit\n");
+  }
+  return ret;
+}
+ObString ZypToString_varchar(const ObObj& obj) { 
+  auto ret = obj.get_varchar();
+  if((unsigned char)(ret.ptr()[0])>127) {
+    LOG_INFO("shit\n");
+  }
+  return ret;
+}
 ObString ZypToString_longtext(const ObObj& obj) { return obj.get_varchar(); }
 ObString ZypToString_tinyint(const ObObj& obj) { return ZypToString(obj.get_tinyint()); }
 ObString ZypToString_varbinary(const ObObj& obj) { return obj.get_varbinary(); }
 ObString ZypToString_bigunsigned(const ObObj& obj) { return ZypToString(obj.get_uint64()); }
 
-#define TABLE_NAME "__all_table"
+#define row_cnt(a,b) +1
+
+#define member_name(a) a##_member_
+#define member_obj_name(a) a##_member_obj_
+#define member_is_null_name(a) a##_member_is_null_
+#define set_member_name(a) set_##a
+#define set_member_null_name(a) set_##a##_null
+#define init_obj_name(a) init_obj_##a
 
 #define to_core_row(x,y) \
   tmp=OB_NEW(ZypAllCoreTableRow, "core_row");\
   tmp->set_gmt_create(now);\
   tmp->set_gmt_modified(now);\
-  tmp->set_table_name(TABLE_NAME);\
+  tmp->set_table_name(_table_name_);\
   tmp->set_row_id(row);\
   tmp->set_column_name(#x);\
-  if(x##_.is_null()) tmp->set_column_value_null();\
-  else tmp->set_column_value(ZypToString_##y(x##_));\
+  if(member_is_null_name(x)) tmp->set_column_value_null();\
+  else tmp->set_column_value(ZypToString(member_name(x)));\
   ret[cnt++]=tmp;
 
-class ZypAllTableRow : public ZypRow {
-  ZYP_ALL_TABLE_OP(member);
-public:
-  virtual ObObj* get_cells() { return &gmt_create_; }
-  virtual size_t get_cells_cnt() { return 80; }
-  virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) {
-    auto now = ObTimeUtility::fast_current_time();
-    int64_t row = row_id++;
-    ZypAllCoreTableRow* tmp;
-    ObArray<ZypRow*> ret;
-    ret.prepare_allocate(get_cells_cnt());
-    int cnt = 0;
-    ZYP_ALL_TABLE_OP(to_core_row);
-    return ret;
-  }
-};
-#undef TABLE_NAME
-#define TABLE_NAME "__all_column"
-class ZypAllColumnRow : public ZypRow {
-  ZYP_ALL_COLUMN_OP(member);
-public:
-  virtual ObObj* get_cells() { return &gmt_create_; }
-  virtual size_t get_cells_cnt() { return 32; }
-  virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) {
-    auto now = ObTimeUtility::fast_current_time();
-    int64_t row = row_id++;
-    ZypAllCoreTableRow* tmp;
-    ObArray<ZypRow*> ret;
-    ret.prepare_allocate(get_cells_cnt());
-    int cnt = 0;
-    ZYP_ALL_COLUMN_OP(to_core_row);
-    return ret;
-  }
-};
-#undef TABLE_NAME
-class ZypAllTableHistoryRow : public ZypRow {
-  ZYP_ALL_TABLE_HISTORY_OP(member);
-public:
-  virtual ObObj* get_cells() { return &gmt_create_; }
-  virtual size_t get_cells_cnt() { return 81; }
-  virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) { return {}; }
-};
-class ZypAllColumnHistoryRow : public ZypRow {
-  ZYP_ALL_COLUMN_HISTORY_OP(member);
-public:
-  virtual ObObj* get_cells() { return &gmt_create_; }
-  virtual size_t get_cells_cnt() { return 33; }
-  virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) { return {}; }
-};
-class ZypAllDDLOperationRow : public ZypRow {
-  ZYP_ALL_DDL_OPERATION_OP(member);
-public:
-  virtual ObObj* get_cells() { return &gmt_create_; }
-  virtual size_t get_cells_cnt() { return 13; }
-  virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) { return {}; }
-};
+#define member(a,b) \
+  private:\
+    b member_name(a);\
+    bool member_is_null_name(a){true};\
+  public:\
+    int set_member_name(a)(const b& tmp) { member_name(a) = tmp; member_is_null_name(a)=false; return OB_SUCCESS; }\
+    int set_member_null_name(a)() { member_is_null_name(a)=true; return OB_SUCCESS; }
+
+#define member_obj(a,b) \
+  private: \
+    ObObj member_obj_name(a); \
+    void init_obj_name(a)() { \
+      if(member_is_null_name(a)) { \
+        add_null(&member_obj_name(a)); \
+      } else { \
+        add_##b(&member_obj_name(a), member_name(a)); \
+      } \
+    }
+
+#define init_obj(a,b) init_obj_name(a)();
+
+#define TABLE_CLASS_DECLARE(class_name, table_name, table_rows) \
+  class class_name : public ZypRow { \
+    static const char* _table_name_; \
+    table_rows(member);\
+    ObObj begin;\
+    table_rows(member_obj);\
+  public:\
+    virtual void init_objs() { table_rows(init_obj); }\
+    virtual ObObj* get_cells() { return &begin+1; }\
+    virtual size_t get_cells_cnt() { return table_rows(row_cnt); }\
+    virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) {\
+      auto now = ObTimeUtility::fast_current_time();\
+      int64_t row = row_id++;\
+      ZypAllCoreTableRow* tmp;\
+      ObArray<ZypRow*> ret;\
+      ret.prepare_allocate(get_cells_cnt());\
+      int cnt = 0;\
+      table_rows(to_core_row);\
+      return ret;\
+    }\
+  }; \
+  const char* class_name::_table_name_ = table_name;
+
+TABLE_CLASS_DECLARE(ZypAllCoreTableRow, "__all_core_table", ZYP_ALL_CORE_TABLE_OP);
+TABLE_CLASS_DECLARE(ZypAllTableRow, "__all_table", ZYP_ALL_TABLE_OP);
+TABLE_CLASS_DECLARE(ZypAllColumnRow, "__all_column", ZYP_ALL_COLUMN_OP);
+TABLE_CLASS_DECLARE(ZypAllTableHistoryRow, "__all_table_history", ZYP_ALL_TABLE_HISTORY_OP);
+TABLE_CLASS_DECLARE(ZypAllColumnHistoryRow, "__all_column_history", ZYP_ALL_COLUMN_HISTORY_OP);
+TABLE_CLASS_DECLARE(ZypAllDDLOperationRow, "__all_ddl_operation", ZYP_ALL_DDL_OPERATION_OP);
 
 #undef member
 
@@ -3137,7 +3110,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   const uint64_t tenant_id = tables.at(0).get_tenant_id();
   LOG_INFO("table count", K(tables.count()));
   const uint64_t exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
-  ObArray<ObArray<ZypRow*>> all_core_all_table_rows;
+  ObArray<ZypRow*> all_core_all_table_rows;
   // ObArray<ZypRow*> all_core_all_table_rows;
   ObArray<ZypRow*> all_table_rows;
   ObArray<ZypRow*> all_column_rows;
@@ -3152,7 +3125,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   DEFER({free_all(all_table_history_rows);});
   DEFER({free_all(all_column_history_rows);});
   DEFER({free_all(all_ddl_operation_rows);});
-  DEFER({for(int i=0;i<all_core_all_table_rows.count();i++)free_all(all_core_all_table_rows.at(i));});
+  DEFER({free_all(all_core_all_table_rows);});
 
   std::atomic_long core_all_table_idx;
   std::atomic_long core_all_column_idx;
@@ -3171,7 +3144,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
     if(is_core_table(table.get_table_id())) {
       auto tmp = row->gen_core_rows(core_all_table_idx);
-      all_core_all_table_rows.push_back(tmp);
+      for(int i=0;i<tmp.count();i++)all_core_all_table_rows.push_back(tmp.at(i));
       OB_DELETE(ZypAllTableRow, "create_table", row);
     } else {
       all_table_rows.push_back(row);
@@ -3195,7 +3168,8 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
           LOG_WARN("fail to gen_column_dml", KR(ret));
         } else {
           if(is_core_table(table_id)) {
-            all_core_all_table_rows.push_back(row->gen_core_rows(core_all_column_idx));
+            auto tmp=row->gen_core_rows(core_all_column_idx);
+            for(int i=0;i<tmp.count();i++)all_core_all_table_rows.push_back(tmp.at(i));
             OB_DELETE(ZypAllColumnRow, "create_table", row);
           } else {
             all_column_rows.push_back(row);
@@ -3261,29 +3235,66 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       last_schema_version = table.get_schema_version();
     }
   }
-  auto exec_sql = [&](ObISQLClient &sql_client, ObDMLSqlSplicer& dml, const char* table_name) {
-    int ret = OB_SUCCESS;
+
+  auto run_insert_all_core_table=[&](ObISQLClient& sql_client) { 
     int64_t affected_rows;
-    ObSqlString sql;
-    if(dml.get_row_count()>1) {
-      dml.splice_batch_insert_sql(table_name, sql);
-    } else {
-      dml.splice_insert_sql(table_name, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-      LOG_WARN("failed to write for table", K(table_name), KR(ret), K(sql.ptr()));
-    } else {
-      LOG_INFO("insert rows", K(affected_rows));
-    }
-    return ret;
+    sql_client.write("INSERT INTO __all_core_table (table_name, row_id, column_name, column_value) VALUES  ('__all_schema_status', 1, 'tenant_id', '1')", affected_rows);
+  };
+  auto run_insert_all_table_history=[&](ObISQLClient& sql_client) { 
+    int64_t affected_rows;
+    sql_client.write("INSERT INTO __all_table_history (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type, is_deleted) VALUES (0, 100003, X'5F5F6964785F335F6964785F74625F6E616D65', 201001, 5, 0, 0, 3, 1, 20, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 3, 2, 202001, 0, 1, 0, 0, 0, X'', 1, 0, X'', 0, 1701567770476688, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 100003 , 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0, 0)", affected_rows);
+  };
+  auto run_insert_all_table=[&](ObISQLClient& sql_client) { 
+    int64_t affected_rows;
+    sql_client.write("INSERT INTO __all_table (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type) VALUES (0, 60102, X'5F5F616C6C5F757365725F6175785F6C6F625F7069656365', 201001, 12, 0, 0, 1, 0, 18, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 102, 1, 202001, 0, 0, 0, 0, 0, X'', 1, 0, X'', 0, 1701567770476808, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 60102, 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0)", affected_rows);
+  };
+  auto run_insert_all_column=[&](ObISQLClient& sql_client) { 
+    int64_t affected_rows;
+    sql_client.write("INSERT INTO __all_column (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified) VALUES (0,101036,23,X'6E616D65',1,1,0,22,64,-1,-1,0,0,0,0,0,NULL,NULL,NULL,0,45,X'',0,0,NULL,0,-32,0,0,now(6),now(6))", affected_rows);
+  };
+  auto run_insert_all_column_history=[&](ObISQLClient& sql_client) { 
+    int64_t affected_rows;
+    sql_client.write("INSERT INTO __all_column_history (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified, is_deleted) VALUES (0,12218,16,X'74656E616E745F6964',1,0,0,5,0,20,0,0,0,0,0,0,NULL,NULL,NULL,0,63,X'',0,0,NULL,0,-32,0,0,now(6),now(6),0)", affected_rows);
+  };
+  auto run_insert_all_ddl_operation=[&](ObISQLClient& sql_client) { 
+    int64_t affected_rows;
+    sql_client.write("INSERT INTO __all_ddl_operation (schema_version, tenant_id, exec_tenant_id, user_id, database_id, database_name, tablegroup_id, table_id, table_name, operation_type, ddl_stmt_str, gmt_modified) VALUES (1701567770476696, 0, 1, 0, 201001, '', 202001, 50003, '', 4, '', now(6))", affected_rows);
   };
 
-  std::atomic_int now{0};
   std::atomic_int client_idx{0};
 
   auto table_count = tables.count();
 
   auto trace_id = ObCurTraceId::get_trace_id();
+
+  std::vector<ZypInsertInfo*> insert_info={
+    OB_NEW(ZypInsertInfo, "insert_info", all_core_all_table_rows),
+    OB_NEW(ZypInsertInfo, "insert_info", all_table_history_rows),
+    OB_NEW(ZypInsertInfo, "insert_info", all_table_rows),
+    OB_NEW(ZypInsertInfo, "insert_info", all_column_rows),
+    OB_NEW(ZypInsertInfo, "insert_info", all_column_history_rows),
+    OB_NEW(ZypInsertInfo, "insert_info", all_ddl_operation_rows),
+  };
+  DEFER({for(auto x:insert_info)OB_DELETE(ZypInsertInfo, "insert_info", x);});
+
+  std::vector<std::function<void(ObISQLClient&)>> run_insert={
+    run_insert_all_core_table,
+    run_insert_all_table_history,
+    run_insert_all_table,
+    run_insert_all_column,
+    run_insert_all_column_history,
+    run_insert_all_ddl_operation,
+  };
+
+  auto find_max_idx=[&]() {
+    int ret = -1;
+    long max_count=-1;
+    for(int i=0;i<insert_info.size();i++) {
+      auto t = insert_info[i]->count();
+      if(t>0&&t>max_count)max_count=t, ret=i;
+    }
+    return ret;
+  };
 
   auto create_table = [&](){
     zyp_enable();
@@ -3293,13 +3304,18 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     }
     int id = client_idx++;
     ObISQLClient& client=*sql_client[id];
+
+    auto run=[&](int idx) {
+      ::zyp_insert_info = insert_info[idx];
+      run_insert[idx](client);
+    };
+
+    if(id<run_insert.size()) run(id);
+
     while(true) {
-      int i=now++;
-      LOG_INFO("running", K(i));
-      if(i>=4*table_count) {
-        break;
-      }
-      // TODO(zhaoyiping):
+      int idx = find_max_idx();
+      if(idx==-1)break;
+      run(idx);
     }
   };
 

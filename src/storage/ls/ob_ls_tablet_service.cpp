@@ -73,6 +73,7 @@
 #include "observer/table_load/ob_table_load_store.h"
 #include "observer/ob_server_event_history_table_operator.h"
 #include "storage/high_availability/ob_storage_ha_utils.h"
+#include "share/ob_zyp.h"
 
 using namespace oceanbase::share;
 using namespace oceanbase::common;
@@ -2642,11 +2643,18 @@ int ObLSTabletService::insert_rows(
       if (row_count <= 0) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("row_count should be greater than 0", K(ret));
-      } else if (!rows_info.is_inited()
-          && OB_FAIL(rows_info.init(data_table,
-                                    ctx,
-                                    tablet_handle.get_obj()->get_rowkey_read_info()))) {
-        LOG_WARN("Failed to init rows info", K(ret), K(data_table));
+      } else if (!rows_info.is_inited()) {
+        if(OB_FAIL(rows_info.init(data_table, ctx, tablet_handle.get_obj()->get_rowkey_read_info()))) {
+          LOG_WARN("Failed to init rows info", K(ret), K(data_table));
+        }
+        char buf[8192];
+        char* p=buf;
+        p+=sprintf(p, "insert_rows ");
+        p+=rows_info.to_string(p, 8192+buf-p);
+        p+=sprintf(p, "\n");
+        zyp_unlimit_log(buf, p-buf);
+      } 
+      if(OB_FAIL(ret)){
       } else if (1 == row_count) {
         tbl_rows = &reserved_row;
         tbl_rows[0].flag_.set_flag(ObDmlFlag::DF_INSERT);
@@ -2661,6 +2669,20 @@ int ObLSTabletService::insert_rows(
             tbl_rows[i].flag_.set_flag(ObDmlFlag::DF_INSERT);
           }
         }
+      }
+
+      if(zyp_enabled()&&::zyp_insert_info!=nullptr) {
+        ZypRow* row;
+        while((row=::zyp_insert_info->get_row())!=nullptr) {
+          auto new_row = row->new_row();
+          LOG_INFO("zyp insert", K(new_row), K(rows_info), K(rows[0]));
+          if(OB_FAIL(insert_rows_to_tablet(tablet_handle, run_ctx, &new_row, 1, rows_info, tbl_rows, afct_num, dup_num))){
+            LOG_INFO("zyp insert_rows_to_tablet failed", KR(ret));
+            break;
+          }
+          lob_allocator.reuse();
+        }
+        break;
       }
 
       if (OB_FAIL(ret)) {
