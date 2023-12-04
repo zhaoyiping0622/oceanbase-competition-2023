@@ -225,6 +225,7 @@ int ObHeartbeatService::check_upgrade_compat_()
 }
 int ObHeartbeatService::send_heartbeat_()
 {
+  LOG_INFO("zyp send_heartbeat_()");
   int ret = OB_SUCCESS;
   ObHBRequestArray hb_requests;
   int64_t tmp_whitelist_epoch_id = palf::INVALID_PROPOSAL_ID;
@@ -235,7 +236,7 @@ int ObHeartbeatService::send_heartbeat_()
     ret = OB_ERR_UNEXPECTED;
     HBS_LOG_ERROR("srv_rpc_proxy_ is null", KR(ret), KP(srv_rpc_proxy_));
   } else {
-    ObTimeGuard time_guard("ObHeartbeatService::send_heartbeat_", 2 * 1000 * 1000);
+    ObTimeGuard time_guard("ObHeartbeatService::send_heartbeat_", 200 * 1000);
     // step 1: prepare hb_requests based on the whitelist
     if (OB_FAIL(prepare_hb_requests_(hb_requests, tmp_whitelist_epoch_id))) {
       LOG_WARN("fail to prepare heartbeat requests", KR(ret));
@@ -386,7 +387,7 @@ int ObHeartbeatService::manage_heartbeat_()
     ret = OB_NOT_INIT;
     LOG_WARN("not init", KR(ret), K(is_inited_));
   } else {
-    ObTimeGuard time_guard("ObHeartbeatService::manage_heartbeat_", 200 * 1000);
+    ObTimeGuard time_guard("ObHeartbeatService::manage_heartbeat_", 2 * 1000 * 1000);
     int tmp_ret = OB_SUCCESS;
     if (OB_TMP_FAIL(prepare_whitelist_())) {
       ret = OB_SUCC(ret) ? tmp_ret : ret;
