@@ -63,13 +63,13 @@ void* libc_hdl;
 const char* LIBC_NAME="libc.so.6";
 unsigned int (*glibc_sleep)(unsigned int);
 unsigned int (*glibc_usleep)(useconds_t);
-// unsigned int (*glibc_nanosleep)(unsigned int);
+int (*glibc_nanosleep)(const struct timespec *req, struct timespec *rem);
 const int div_times = 128;
 __attribute__((constructor)) void hook_init() {
   libc_hdl = dlopen(LIBC_NAME, RTLD_LAZY | RTLD_NOLOAD);
   *(void**)&glibc_sleep = dlsym(libc_hdl, "sleep");;
   *(void**)&glibc_usleep = dlsym(libc_hdl, "usleep");;
-  // *(void**)&glibc_nanosleep = dlsym(libc_hdl, "nanosleep");;
+  *(void**)&glibc_nanosleep = dlsym(libc_hdl, "nanosleep");;
   puts("hook_init");
 }
 int usleep(useconds_t microseconds){
@@ -77,6 +77,14 @@ int usleep(useconds_t microseconds){
 }
 unsigned int sleep(unsigned int seconds) {
   return usleep(seconds*1000);
+}
+int nanosleep(const struct timespec *req, struct timespec *rem) {
+  long long tmp = req->tv_sec*1000000000ll + req->tv_nsec;
+  tmp/=div_times;
+  struct timespec req1;
+  req1.tv_sec = tmp/1000000000;
+  req1.tv_nsec = tmp%1000000000;
+  return glibc_nanosleep(&req1, rem);
 }
 }
 
