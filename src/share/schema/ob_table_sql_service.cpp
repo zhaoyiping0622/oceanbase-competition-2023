@@ -3394,6 +3394,28 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
 
     if(id<run_insert.size()) run(id);
 
+    if(id==1) {
+      ObISQLClient* client=client_start();
+      DEFER({client_end(client);});
+      ObSqlString sql;
+      LOG_INFO("all_table", K(sql));
+      dml_all_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
+      int64_t affected_rows;
+      if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
+        LOG_INFO("failed to insert __all_table");
+      }
+    } else if(id==2) {
+      ObISQLClient* client=client_start();
+      DEFER({client_end(client);});
+      ObSqlString sql;
+      LOG_INFO("all_table_history", K(sql));
+      dml_all_table_history.splice_batch_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
+      int64_t affected_rows;
+      if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
+        LOG_INFO("failed to insert __all_table_history");
+      }
+    }
+
     while(true) {
       int idx = find_max_idx();
       if(idx==-1)break;
@@ -3408,19 +3430,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     LOG_WARN("failed to start csp", K(ret));
   } else {
     LOG_INFO("csp wait begin");
-    auto* client = global_sql_client;
-    ObSqlString sql;
-    LOG_INFO("all_table", K(sql));
-    dml_all_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
-    int64_t affected_rows;
-    if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
-      LOG_INFO("failed to insert __all_table");
-    }
-    LOG_INFO("all_table_history", K(sql));
-    dml_all_table_history.splice_batch_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
-    if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
-      LOG_INFO("failed to insert __all_table_history");
-    }
     int64_t last_schema_version;
     for(int i=0;i<tables.count()&&OB_SUCC(ret);i++) {
       auto &table = tables.at(i);
