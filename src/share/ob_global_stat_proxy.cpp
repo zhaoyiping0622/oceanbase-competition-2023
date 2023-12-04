@@ -109,15 +109,43 @@ int ObGlobalStatProxy::set_tenant_init_global_stat(
     } \
   } while (false)
 
+static hash::ObHashMap<uint64_t, int64_t> core_schema_version_hash_map;
+class HashMapUpdate {
+public:
+  HashMapUpdate(int64_t v):v_(v) {}
+  void operator()(hash::HashMapPair<uint64_t, int64_t> &v) {
+    if(v.second<v_) v.second=v_;
+  }
+  int64_t v_;
+};
+
+ObGlobalStatProxy::ObGlobalStatProxy(common::ObISQLClient &client,
+                  const uint64_t tenant_id)
+    : core_table_(OB_ALL_GLOBAL_STAT_TNAME, client, tenant_id), tenant_id_(tenant_id)
+{
+  int ret = OB_SUCCESS;
+  auto update = HashMapUpdate(1);
+  if(OB_UNLIKELY(OB_FAIL(core_schema_version_hash_map.set_or_update(tenant_id_, 1, update)))) {
+    if(ret == OB_NOT_INIT) {
+      core_schema_version_hash_map.create(97, ObModIds::OB_HASH_BUCKET);
+    }
+    core_schema_version_hash_map.set_or_update(tenant_id_, 1, update);
+  }
+}
+
 int ObGlobalStatProxy::set_core_schema_version(const int64_t core_schema_version)
 {
   int ret = OB_SUCCESS;
+  auto* tmp = core_schema_version_hash_map.get(tenant_id_);
+  if(tmp!=nullptr&&*tmp>=core_schema_version) return OB_SUCCESS;
   if (!is_valid() || core_schema_version <= 0) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), "self valid", is_valid(), K(core_schema_version));
   } else {
     bool is_incremental = true;
     SET_ITEM("core_schema_version", core_schema_version, is_incremental);
+    auto update = HashMapUpdate(core_schema_version);
+    core_schema_version_hash_map.atomic_refactored(tenant_id_, update);
   }
   return ret;
 }
@@ -381,6 +409,11 @@ int ObGlobalStatProxy::update(const ObGlobalStatItem::ItemList &list,
 int ObGlobalStatProxy::get_core_schema_version(int64_t &core_schema_version)
 {
   int ret = OB_SUCCESS;
+  auto* tmp = core_schema_version_hash_map.get(tenant_id_);
+  if(tmp!=nullptr&&*tmp!=1) {
+    core_schema_version=*tmp;
+    return ret;
+  }
   ObGlobalStatItem::ItemList list;
   ObGlobalStatItem core_schema_version_item(list, "core_schema_version", core_schema_version);
   if (!is_valid()) {

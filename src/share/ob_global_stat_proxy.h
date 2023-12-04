@@ -40,9 +40,8 @@ class ObGlobalStatProxy
 {
 public:
   ObGlobalStatProxy(common::ObISQLClient &client,
-                    const uint64_t tenant_id)
-      : core_table_(OB_ALL_GLOBAL_STAT_TNAME, client, tenant_id)
-  {}
+                    const uint64_t tenant_id);
+
   virtual ~ObGlobalStatProxy() {}
   void set_sql_client(common::ObISQLClient &client) { core_table_.set_sql_client(client); }
   bool is_valid() const { return core_table_.is_valid(); }
@@ -117,6 +116,7 @@ private:
   static const char* GC_SCHEMA_VERSION_CNAME;
 private:
   ObCoreTableProxy core_table_;
+  uint64_t tenant_id_;
 
 };
 
