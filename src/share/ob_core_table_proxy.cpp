@@ -162,7 +162,7 @@ int ObCoreTableProxy::Row::get_timestamp(const char *name, const common::ObTimeZ
 {
   int ret = OB_SUCCESS;
   Cell *cell = NULL;
-  const char *special_column = "gmt_modified";
+  // const char *special_column = "gmt_modified";
   ObTimeConvertCtx cvrt_ctx(tz_info, true);
   if (!inited_) {
     ret = OB_NOT_INIT;
@@ -170,12 +170,12 @@ int ObCoreTableProxy::Row::get_timestamp(const char *name, const common::ObTimeZ
   } else if (NULL == name) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), KP(name));
-  } else if (strncmp(special_column, name, strlen(name))) {
-    // gmt_modified is special treatment, get modify_time_us of __all_core_table
-    const char *change_to_column = "modify_time_us";
-    if (OB_FAIL(get_int(change_to_column, value))) {
-      LOG_WARN("get gmt_modified fail", K(ret), K(name), K(value));
-    }
+  // } else if (strncmp(special_column, name, strlen(name))) {
+  //   // gmt_modified is special treatment, get modify_time_us of __all_core_table
+  //   const char *change_to_column = "modify_time_us";
+  //   if (OB_FAIL(get_int(change_to_column, value))) {
+  //     LOG_WARN("get gmt_modified fail", K(ret), K(name), K(value));
+  //   }
   } else if (OB_FAIL(get_cell(name, cell))) {
     // return NULL value for not found
     if (OB_ENTRY_NOT_EXIST == ret) {
