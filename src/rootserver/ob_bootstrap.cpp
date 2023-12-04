@@ -1008,29 +1008,25 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
     int64_t batch_count = 1;
     const int64_t MAX_RETRY_TIMES = 3;
 
-    std::atomic<int> now{0};
-
-    std::vector<ObISQLClient*> sql_clients;
-    for(int i=0;i<9;i++){
-      ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service.get_schema_service(), true, true, false, false);
-      const int64_t refreshed_schema_version = 0;
-      const int tenant_id = OB_SYS_TENANT_ID;
-      if(OB_FAIL(sql_client->start(&ddl_service.get_sql_proxy(), tenant_id, refreshed_schema_version))) {
-        LOG_INFO("failed to start sql_client", KR(ret), K(i));
-      } else {
-        LOG_INFO("start sql_client successfully", K(i));
-      }
-      sql_clients.push_back(sql_client);
-    }
     ObDDLOperator ddl_operator(ddl_service.get_schema_service(),
         ddl_service.get_sql_proxy());
-    ddl_operator.create_table_batch(table_schemas, sql_clients);
-    for(int i=0;i<9;i++){
-      if(OB_FAIL(((ObDDLSQLTransaction*)sql_clients[i])->end(true))){
-        LOG_WARN("sql_clients end failed");
+    ddl_operator.create_table_batch(table_schemas, 
+      [&](){
+        ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service.get_schema_service(), true, true, false, false);
+        const int64_t refreshed_schema_version = 0;
+        const int tenant_id = OB_SYS_TENANT_ID;
+        if(OB_FAIL(sql_client->start(&ddl_service.get_sql_proxy(), tenant_id, refreshed_schema_version))) {
+          LOG_INFO("failed to start sql_client", KR(ret));
+        }
+        return sql_client;
+      },
+      [&](ObISQLClient* sql_client) {
+        if(OB_FAIL(((ObDDLSQLTransaction*)sql_client)->end(true))){
+          LOG_WARN("sql_clients end failed");
+        }
+        OB_DELETE(ObISQLClient, "create_table", sql_client);
       }
-      OB_DELETE(ObISQLClient, "create_table", sql_clients[i]);
-    }
+    );
   }
   LOG_INFO("end create all schemas", K(ret), "table count", table_schemas.count(),
            "time_used", ObTimeUtility::current_time() - begin_time);

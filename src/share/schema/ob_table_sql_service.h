@@ -38,8 +38,9 @@ public:
     {}
   virtual ~ObTableSqlService() {}
 
-  virtual int create_table_batch(common::ObIArray<ObTableSchema> &table,
-                                 std::vector<common::ObISQLClient*> &sql_client);
+  int create_table_batch(common::ObIArray<ObTableSchema> &table,
+                           std::function<ObISQLClient*()> client_start,
+                           std::function<void(ObISQLClient*)> client_end);
 
   virtual int create_table(ObTableSchema &table,
                            common::ObISQLClient &sql_client,

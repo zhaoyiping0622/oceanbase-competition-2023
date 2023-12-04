@@ -3127,7 +3127,8 @@ int gen_column_dml(
 }
 
 int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &tables,
-                       std::vector<common::ObISQLClient*> &sql_client) {
+                           std::function<ObISQLClient*()> client_start,
+                           std::function<void(ObISQLClient*)> client_end) {
   DEFER({zyp_allocator.free();});
   OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
@@ -3159,11 +3160,14 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   std::atomic_long core_all_table_idx;
   std::atomic_long core_all_column_idx;
 
-  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME,*sql_client[0],tenant_id);
+  ObISQLClient* global_sql_client = client_start();
+  DEFER({client_end(global_sql_client);});
+
+  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME, *global_sql_client,tenant_id);
   kv.load();
   core_all_table_idx = kv.row_count()+1;
   kv.~ObCoreTableProxy();
-  new (&kv)ObCoreTableProxy(OB_ALL_COLUMN_TNAME, *sql_client[0], tenant_id);
+  new (&kv)ObCoreTableProxy(OB_ALL_COLUMN_TNAME, *global_sql_client, tenant_id);
   kv.load();
   core_all_column_idx = kv.row_count()+1;
 
@@ -3378,12 +3382,13 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       ObCurTraceId::set(*trace_id);
     }
     int id = client_idx++;
-    ObISQLClient& client=*sql_client[id];
 
     auto run=[&](int idx) {
+      ObISQLClient* client=client_start();
+      DEFER({client_end(client);});
       ::zyp_insert_info = insert_info[idx];
       LOG_INFO("::zyp_insert_info", K(::zyp_insert_info));
-      run_insert[idx](client);
+      run_insert[idx](*client);
       LOG_INFO("insert done", K(idx));
     };
 
@@ -3403,7 +3408,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     LOG_WARN("failed to start csp", K(ret));
   } else {
     LOG_INFO("csp wait begin");
-    auto& client = sql_client.at(sql_client.size()-1);
+    auto* client = global_sql_client;
     ObSqlString sql;
     LOG_INFO("all_table", K(sql));
     dml_all_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
@@ -3428,7 +3433,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     LOG_INFO("csp wait done");
     csp.destroy();
     LOG_INFO("csp destroy");
-    if(OB_FAIL(log_core_operation(*sql_client[0], exec_tenant_id, last_schema_version))) {
+    if(OB_FAIL(log_core_operation(*global_sql_client, exec_tenant_id, last_schema_version))) {
       LOG_WARN("failed to update last_schema_version", KR(ret), K(last_schema_version), K(exec_tenant_id));
     }
   }
