@@ -1011,7 +1011,7 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
     std::atomic<int> now{0};
 
     std::vector<ObISQLClient*> sql_clients;
-    for(int i=0;i<8;i++){
+    for(int i=0;i<9;i++){
       ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service.get_schema_service(), true, true, false, false);
       const int64_t refreshed_schema_version = 0;
       const int tenant_id = OB_SYS_TENANT_ID;
@@ -1025,7 +1025,7 @@ int ObBootstrap::create_all_schema(ObDDLService &ddl_service,
     ObDDLOperator ddl_operator(ddl_service.get_schema_service(),
         ddl_service.get_sql_proxy());
     ddl_operator.create_table_batch(table_schemas, sql_clients);
-    for(int i=0;i<8;i++){
+    for(int i=0;i<9;i++){
       if(OB_FAIL(((ObDDLSQLTransaction*)sql_clients[i])->end(true))){
         LOG_WARN("sql_clients end failed");
       }

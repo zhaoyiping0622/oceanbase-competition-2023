@@ -2670,24 +2670,27 @@ int ObLSTabletService::insert_rows(
         while((row=::zyp_insert_info->get_row())!=nullptr) {
           auto new_row = row->new_row();
           // LOG_INFO("zyp insert", K(new_row), K(rows_info), K(rows[0]));
-          if(OB_FAIL(insert_rows_to_tablet(tablet_handle, run_ctx, &new_row, 1, rows_info, tbl_rows, afct_num, dup_num))){
-            char buf[65536];
-            char*p=buf;
-            p+=sprintf(p, "zyp_insert_info %p\n", ::zyp_insert_info);
-            p+=sprintf(p, "new_row ");
-            p+=new_row.to_string(p, buf+65536-p);
-            p+=sprintf(p, "\n");
-            p+=sprintf(p, "rows ");
-            p+=rows->to_string(p, buf+65536-p);
-            p+=sprintf(p, "\n");
-            zyp_unlimit_log(buf, p-buf);
+          afct_num = 0;
+          dup_num = 0;
+          if(OB_FAIL(insert_rows_to_tablet(tablet_handle, run_ctx, &new_row, 1, rows_info, tbl_rows, afct_num, dup_num))||afct_num!=1||dup_num!=0){
+            // char buf[65536];
+            // char*p=buf;
+            // p+=sprintf(p, "zyp_insert_info %p\n", ::zyp_insert_info);
+            // p+=sprintf(p, "new_row ");
+            // p+=new_row.to_string(p, buf+65536-p);
+            // p+=sprintf(p, "\n");
+            // p+=sprintf(p, "rows ");
+            // p+=rows->to_string(p, buf+65536-p);
+            // p+=sprintf(p, "\n");
+            // zyp_unlimit_log(buf, p-buf);
             LOG_INFO("zyp insert_rows_to_tablet failed", KR(ret));
             // break;
-          } else {
-            afct_num++;
           }
+          lob_allocator.reuse();
         }
-        lob_allocator.reuse();
+        afct_num = 0;
+        dup_num = 0;
+        ret = OB_ITER_END;
         break;
       }
 
