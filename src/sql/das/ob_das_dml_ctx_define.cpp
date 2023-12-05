@@ -17,6 +17,7 @@
 #include "sql/das/ob_das_utils.h"
 #include "sql/engine/dml/ob_dml_service.h"
 #include "sql/engine/expr/ob_expr_lob_utils.h"
+#include "share/ob_zyp.h"
 namespace oceanbase
 {
 namespace sql
@@ -272,12 +273,27 @@ int ObDASWriteBuffer::DmlShadowRow::shadow_copy(const ObIArray<ObExpr*> &exprs, 
   if (OB_ISNULL(store_row_) || OB_UNLIKELY(store_row_->cnt_ != exprs.count())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("NULL datums or count mismatch", K(ret), KPC(store_row_), K(exprs.count()));
+  } else if(zyp_enabled()) {
+    if(zyp_current_row == nullptr) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("zyp_current_row is NULL", K(zyp_insert_info));
+    } else if((*zyp_current_row)->get_cells_cnt() != store_row_->cnt_) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("column count not equal", K(*zyp_current_row), K(store_row_->cnt_));
+    }
   } else {
     ObDatum *datum = nullptr;
     ObDatum *cells = store_row_->cells();
     for (int64_t i = 0; OB_SUCC(ret) && i < exprs.count(); i++) {
-      if (OB_FAIL(exprs.at(i)->eval(ctx, datum))) {
-        LOG_WARN("failed to evaluate expr datum", K(ret), K(i));
+      // FIXME(zhaoyiping): 这里把eval去了，改成我的
+      if(zyp_enabled()) {
+        datum = (*zyp_current_row)->get_datums() + i;
+      } else {
+        if (OB_FAIL(exprs.at(i)->eval(ctx, datum))) {
+          LOG_WARN("failed to evaluate expr datum", K(ret), K(i));
+        }
+      }
+      if(OB_FAIL(ret)) {
       } else if (lib::is_oracle_mode() && !datum->is_null()
                  && exprs.at(i)->obj_meta_.is_lob_locator()
                  && strip_lob_locator_) {
@@ -402,6 +418,7 @@ int ObDASWriteBuffer::try_add_row(const ObIArray<ObExpr*> &exprs,
       LOG_WARN("try add row with shadow row failed", KK(ret));
     } else if (!row_added) {
       // buff已经满了，add row 失败
+      if(zyp_enabled())LOG_INFO("zyp row_added", K(zyp_current_row-zyp_row_head));
     } else if (OB_ISNULL(stored_row)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("stored row is null", K(ret));
@@ -420,6 +437,7 @@ int ObDASWriteBuffer::try_add_row(const DmlShadowRow &sr,
 {
   int ret = OB_SUCCESS;
   const DmlRow *lsr = sr.get_store_row();
+  // if(zyp_enabled())LOG_INFO("zyp try_add_row", K(*lsr));
   int64_t row_size = lsr->row_size_;
   int64_t simulate_len = - EVENT_CALL(EventTable::EN_DAS_WRITE_ROW_LIST_LEN);
   int64_t final_row_list_len = simulate_len > 0 ? simulate_len : DAS_WRITE_ROW_LIST_LEN;

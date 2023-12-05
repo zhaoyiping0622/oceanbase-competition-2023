@@ -1,11 +1,12 @@
 #include "share/ob_zyp.h"
+#include "share/datum/ob_datum.h"
 #include <mutex>
 
 __thread bool zyp_come = false;
 zyp_string zyp_extra_info;
 
-void zyp_enable() {zyp_come=true;}
-void zyp_disable() {zyp_come=false;}
+void zyp_enable() { zyp_come=true; zyp_inited=false; }
+void zyp_disable() { zyp_come=false; zyp_inited=false; }
 void zyp_set_extra(const zyp_string&s) {zyp_extra_info=s;}
 
 int zyp_fd=-1;
@@ -26,47 +27,75 @@ void zyp_unlimit_log(const char* buf, size_t size) {
 bool zyp_enabled(){return zyp_come;}
 
 thread_local ZypInsertInfo* zyp_insert_info = nullptr;
+thread_local ZypRow** zyp_current_row = nullptr;
+thread_local ZypRow** zyp_row_head = nullptr;
+thread_local ZypRow** zyp_row_tail = nullptr;
+thread_local bool zyp_inited = false;
 
 using namespace oceanbase::common;
 
-void ZypRow::add_varchar(ObObj* obj, const ObString&s) {
+oceanbase::PageArena<> ZypRow::allocator;
+
+void ZypRow::add_varchar(ObObj* obj, ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
     // obj->set_varchar("");
+    datum->set_null();
   } else {
     obj->set_varchar(s);
+    datum->set_string(s);
   }
   obj->set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
 }
-void ZypRow::add_varbinary(ObObj* obj, const ObString&s) {
+void ZypRow::add_varbinary(ObObj* obj, ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
     // obj->set_varbinary("");
+    datum->set_null();
   } else {
     obj->set_varbinary(s);
+    datum->set_string(s);
   }
   obj->set_collation_type(CS_TYPE_BINARY);
 }
-void ZypRow::add_longtext(ObObj* obj, const ObString&s) {
+void ZypRow::add_longtext(ObObj* obj, ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
     // obj->set_string(oceanbase::ObLongTextType, "");
+    datum->set_null();
   } else {
     obj->set_string(oceanbase::ObLongTextType, s);
+    datum->set_string(s);
   }
   obj->set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
 }
-void ZypRow::add_bigint(ObObj* obj, int64_t v) {
+void ZypRow::add_bigint(ObObj* obj, ObDatum* datum, int64_t v) {
   obj->set_int(v);
+  datum->set_int(v);
 }
-void ZypRow::add_tinyint(ObObj* obj, int8_t v) {
+void ZypRow::add_tinyint(ObObj* obj, ObDatum* datum, int8_t v) {
   obj->set_tinyint(v);
+  datum->set_int(v);
 }
-void ZypRow::add_bigunsigned(ObObj* obj, uint64_t v) {
+void ZypRow::add_bigunsigned(ObObj* obj, ObDatum* datum, uint64_t v) {
   obj->set_uint64(v);
+  datum->set_uint(v);
 }
-void ZypRow::add_null(ObObj* obj) {
+void ZypRow::add_null(ObObj* obj, ObDatum* datum) {
   obj->set_null();
+  datum->set_null();
 }
-void ZypRow::add_timestamp(ObObj* obj, int64_t timestamp) {
+void ZypRow::add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp) {
   obj->set_timestamp(timestamp);
+  datum->set_timestamp(timestamp);
 }
 ObNewRow ZypRow::new_row() { init_objs(); return ObNewRow(get_cells(), get_cells_cnt()); }
 
+ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
+  auto head = idx_.fetch_add(count);
+  if(head>=array_.count()) {
+    return {};
+  }
+  ObArray<ZypRow*> ret;
+  count = std::min(count, array_.count()-head);
+  ret.prepare_allocate(count);
+  for(int i=0;i<count;i++) ret[i]=array_.at(i);
+  return ret;
+}

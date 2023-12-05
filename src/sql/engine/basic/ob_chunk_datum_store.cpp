@@ -19,6 +19,7 @@
 #include "lib/container/ob_se_array_iterator.h"
 #include "lib/utility/ob_tracepoint.h"
 #include "share/config/ob_server_config.h"
+#include "share/ob_zyp.h"
 
 namespace oceanbase
 {
@@ -174,7 +175,26 @@ int ObChunkDatumStore::StoredRow::do_build(StoredRow *&sr,
   } else {
     sr->cnt_ = exprs.count();
     ObDatum *datums = sr->cells();
-    for (int64_t i = 0; i < exprs.count() && OB_SUCC(ret); i++) {
+    if(zyp_enabled()) {
+      if(zyp_current_row == nullptr) {
+        ret = OB_ERR_UNEXPECTED;
+        LOG_INFO("zyp_current_row is null");
+      } else if(*zyp_current_row == nullptr) {
+        ret = OB_ERR_UNEXPECTED;
+        LOG_INFO("*zyp_current_row is null");
+      } else if((*zyp_current_row)->get_cells_cnt() != exprs.count()){
+        LOG_INFO("cells count not equals to exprs count");
+      } else {
+        ZypRow* row = *zyp_current_row;
+        auto* zyp_datums = row->get_datums();
+        for(int i=0;OB_SUCC(ret) && i<row->get_cells_cnt();i++) {
+          ret = UNSWIZZLING
+              ? deep_copy_unswizzling(zyp_datums[i], &datums[i], buf, buf_len, pos)
+              : datums[i].deep_copy(zyp_datums[i], buf, buf_len, pos);
+        }
+        LOG_INFO("zyp build one row");
+      }
+    } else for (int64_t i = 0; i < exprs.count() && OB_SUCC(ret); i++) {
       ObExpr *expr = exprs.at(i);
       ObDatum *in_datum = NULL;
       if (OB_UNLIKELY(NULL == expr)) {

@@ -27,6 +27,7 @@
 #include "lib/worker.h"
 #include "share/ob_debug_sync.h"
 #include "sql/engine/dml/ob_fk_checker.h"
+#include "share/ob_zyp.h"
 
 namespace oceanbase
 {
@@ -1241,6 +1242,7 @@ int ObTableModifyOp::discharge_das_write_buffer()
 int ObTableModifyOp::get_next_row_from_child()
 {
   int ret = OB_SUCCESS;
+  if(zyp_enabled()) LOG_INFO("zyp get_next_row_from_child");
   clear_evaluated_flag();
   if (OB_FAIL(child_->get_next_row())) {
     if (OB_ITER_END != ret) {
@@ -1255,6 +1257,21 @@ int ObTableModifyOp::get_next_row_from_child()
 int ObTableModifyOp::inner_get_next_row()
 {
   int ret = OB_SUCCESS;
+  ObArray<ZypRow*> rows;
+  bool zyp_inited = false;
+  if(!iter_end_ && zyp_enabled() && zyp_insert_info != nullptr) {
+    const int batch_size = 1;
+    rows = zyp_insert_info->get_row(batch_size);
+    // FIXME(zhaoyiping): 这里少考虑了一种可能性：下面报错，然后有部分数据插不进去
+    if(rows.count() != 0) {
+      zyp_row_head = rows.get_data();
+      zyp_current_row = zyp_row_head;
+      zyp_row_tail = zyp_row_head + rows.count();
+    } else {
+      iter_end_ = true;
+      ret = OB_ITER_END;
+    }
+  }
   if (iter_end_) {
     LOG_DEBUG("can't get gi task, iter end", K(MY_SPEC.id_), K(iter_end_));
     ret = OB_ITER_END;
@@ -1263,14 +1280,26 @@ int ObTableModifyOp::inner_get_next_row()
     while (OB_SUCC(ret)) {
       if (OB_FAIL(try_check_status())) {
         LOG_WARN("check status failed", K(ret));
-      } else if (OB_FAIL(get_next_row_from_child())) {
-        if (OB_ITER_END != ret) {
-          LOG_WARN("fail to get next row", K(ret));
-        } else {
-          iter_end_ = true;
-          ret = OB_SUCCESS;
-          break;
+      } else {
+        if(/* FIXME(zhaoyiping): 这个记得打开 */ (zyp_enabled() && zyp_inited) || false) {
+          zyp_current_row++;
+          LOG_INFO("zyp hit once");
+          if(zyp_current_row == zyp_row_tail) {
+            iter_end_ = true;
+            ret = OB_ITER_END;
+          }
+        } else if (OB_FAIL(get_next_row_from_child())) {
+          if (OB_ITER_END != ret) {
+            LOG_WARN("fail to get next row", K(ret));
+          } else {
+            iter_end_ = true;
+            ret = OB_SUCCESS;
+            break;
+          }
         }
+        if(zyp_enabled()) zyp_inited = true;
+      } 
+      if(OB_FAIL(ret)) {
       } else if (OB_FAIL(write_row_to_das_buffer())) {
         LOG_WARN("write row to das failed", K(ret));
       } else if (OB_FAIL(discharge_das_write_buffer())) {

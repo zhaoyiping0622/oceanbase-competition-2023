@@ -18,6 +18,7 @@
 #include "sql/das/ob_das_extra_data.h"
 #include "storage/ob_query_iterator_factory.h"
 #include "storage/tx_storage/ob_access_service.h"
+#include "share/ob_zyp.h"
 
 namespace oceanbase
 {
@@ -377,17 +378,20 @@ int ObDASInsertOp::write_row(const ExprFixedArray &row,
                              ObChunkDatumStore::StoredRow *&stored_row,
                              bool &buffer_full)
 {
+  if(zyp_enabled()) LOG_INFO("zyp in write_row begin", K(stored_row));
   int ret = OB_SUCCESS;
   bool added = false;
   buffer_full = false;
   if (!insert_buffer_.is_inited()) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("buffer not inited", K(ret));
+    // TODO(zhaoyiping): 在这里初始化的stored_row
   } else if (OB_FAIL(insert_buffer_.try_add_row(row, &eval_ctx, das::OB_DAS_MAX_PACKET_SIZE, stored_row, added, true))) {
     LOG_WARN("try add row to insert buffer failed", K(ret), K(row), K(insert_buffer_));
   } else if (!added) {
     buffer_full = true;
   }
+  if(zyp_enabled()) LOG_INFO("zyp in write_row end", K(*stored_row));
   return ret;
 }
 
