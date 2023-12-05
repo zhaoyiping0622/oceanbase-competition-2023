@@ -21,6 +21,7 @@
 #include "sql/engine/dml/ob_trigger_handler.h"
 #include "lib/utility/ob_tracepoint.h"
 #include "sql/engine/dml/ob_fk_checker.h"
+#include "share/ob_zyp.h"
 
 namespace oceanbase
 {

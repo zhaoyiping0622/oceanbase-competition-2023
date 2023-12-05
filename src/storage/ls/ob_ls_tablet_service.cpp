@@ -2665,30 +2665,6 @@ int ObLSTabletService::insert_rows(
         }
       }
 
-      // if(zyp_enabled()&&::zyp_insert_info!=nullptr) {
-      //   auto tid = gettid();
-      //   ZypRow* row;
-      //   while((row=::zyp_insert_info->get_row())!=nullptr) {
-      //     auto new_row = row->new_row();
-      //     // LOG_INFO("zyp insert", K(new_row), K(rows_info), K(rows[0]));
-      //     // afct_num = 0;
-      //     // dup_num = 0;
-      //     char buf[128];
-      //     char*p=buf;
-      //     p+=sprintf(p, "zyp_insert_info %p tid %ld insert one row\n", ::zyp_insert_info, tid);
-      //     zyp_unlimit_log(buf, p-buf);
-      //     if(OB_FAIL(insert_rows_to_tablet(tablet_handle, run_ctx, &new_row, 1, rows_info, tbl_rows, afct_num, dup_num))){
-      //       LOG_INFO("zyp insert_rows_to_tablet failed", KR(ret));
-      //       // break;
-      //     }
-      //     lob_allocator.reuse();
-      //   }
-      //   // afct_num = 0;
-      //   // dup_num = 1;
-      //   ret = OB_ITER_END;
-      //   break;
-      // }
-
       if (OB_FAIL(ret)) {
       } else if (OB_ISNULL(tbl_rows)) {
         ret = OB_ERR_UNEXPECTED;

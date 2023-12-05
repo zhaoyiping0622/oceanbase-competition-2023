@@ -1260,7 +1260,7 @@ int ObTableModifyOp::inner_get_next_row()
   ObArray<ZypRow*> rows;
   bool zyp_inited = false;
   if(!iter_end_ && zyp_enabled() && zyp_insert_info != nullptr) {
-    const int batch_size = 1;
+    const int batch_size = 16384;
     rows = zyp_insert_info->get_row(batch_size);
     // FIXME(zhaoyiping): 这里少考虑了一种可能性：下面报错，然后有部分数据插不进去
     if(rows.count() != 0) {
@@ -1283,10 +1283,9 @@ int ObTableModifyOp::inner_get_next_row()
       } else {
         if(/* FIXME(zhaoyiping): 这个记得打开 */ (zyp_enabled() && zyp_inited) || false) {
           zyp_current_row++;
-          LOG_INFO("zyp hit once");
           if(zyp_current_row == zyp_row_tail) {
             iter_end_ = true;
-            ret = OB_ITER_END;
+            break;
           }
         } else if (OB_FAIL(get_next_row_from_child())) {
           if (OB_ITER_END != ret) {
@@ -1298,7 +1297,7 @@ int ObTableModifyOp::inner_get_next_row()
           }
         }
         if(zyp_enabled()) zyp_inited = true;
-      } 
+      }
       if(OB_FAIL(ret)) {
       } else if (OB_FAIL(write_row_to_das_buffer())) {
         LOG_WARN("write row to das failed", K(ret));
@@ -1314,6 +1313,8 @@ int ObTableModifyOp::inner_get_next_row()
       }
       row_count ++;
     }
+
+    if(zyp_enabled()) LOG_INFO("zyp inner_get_next_row", K(row_count), K(iter_end_), K(dml_rtctx_.das_ref_.has_task()), K(dml_rtctx_.das_ref_.get_das_task_cnt()));
 
     if (OB_FAIL(ret)) {
       record_err_for_load_data(ret, row_count);
