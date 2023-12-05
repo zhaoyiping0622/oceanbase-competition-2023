@@ -2363,14 +2363,14 @@ class ObCoreTableProxyBatch {
   public:
     ObCoreTableProxyBatch(const char* table, ObISQLClient& sql_client, uint64_t tenant_id, std::atomic_long& row_id):
       table_name_(table), kv_(table, sql_client, tenant_id), row_id_(row_id), tenant_id_(tenant_id) {}
-    int AddDMLSqlSplicer(ObDMLSqlSplicer& raw_dml) {
+    int AddDMLSqlSplicer(ObDMLSqlSplicer& raw_dml, int64_t limit = INT64_MAX) {
       int ret = OB_SUCCESS;
       ObArray<ObCoreTableProxy::UpdateCell> cells;
       if(OB_FAIL(raw_dml.splice_core_cells(kv_, cells))) {
         LOG_WARN("failed to splice_core_cells", KR(ret));
       } else {
         long now = row_id_++;
-        FOREACH_X(uc, cells, ret==OB_SUCCESS) {
+        FOREACH_X(uc, cells, ret==OB_SUCCESS && limit--) {
           if(OB_FAIL(dml_.add_pk_column("table_name", table_name_))) {
             LOG_WARN("failed to add table_name", KR(ret));
           } else if(OB_FAIL(dml_.add_pk_column("row_id", now))) {
@@ -2401,7 +2401,6 @@ class ObCoreTableProxyBatch {
               LOG_WARN("failed to finish_row", KR(ret));
             }
           }
-          break;
         }
       }
       return ret;
@@ -3196,7 +3195,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     table.set_table_id(114514);
     gen_table_dml(exec_tenant_id, table, false, all_core_table);
     gen_table_dml(exec_tenant_id, table, false, all_table);
-    all_core_table_kv.AddDMLSqlSplicer(all_core_table);
+    all_core_table_kv.AddDMLSqlSplicer(all_core_table, 1);
     gen_table_dml(exec_tenant_id, table, false, all_table_history);
     all_table_history.add_column("is_deleted", 0);
     ObSchemaOperation opt;
@@ -3349,14 +3348,14 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       K(all_column_history_rows.count()),
       K(all_ddl_operation_rows.count()));
 
+  std::atomic_int tmp_value{0};
   auto run_insert_all_core_table=[&](ObISQLClient& sql_client) { 
     int ret = OB_SUCCESS;
     int64_t affected_rows;
-    ObSqlString sql;
-    if(sql.length() == 0) {
-      all_core_table_kv.getDML().splice_batch_insert_sql(OB_ALL_CORE_TABLE_TNAME, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    const char* a = "INSERT INTO __all_core_table (table_name, row_id, column_name, column_value) VALUES  ('__all_zyp_info', %d, 'tenant_id', '1')";
+    char sql[1024];
+    sprintf(sql, a, ++tmp_value);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql, affected_rows))) {
         LOG_INFO("run_insert_all_core_table failed", KR(ret), K(affected_rows));
     } else {
         LOG_INFO("run_insert_all_core_table succeeded", K(affected_rows));
@@ -3365,11 +3364,10 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto run_insert_all_table_history=[&](ObISQLClient& sql_client) { 
     int ret = OB_SUCCESS;
     int64_t affected_rows;
-    ObSqlString sql;
-    if(sql.length() == 0) {
-      all_table_history.splice_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    const char* a = "INSERT INTO __all_table_history (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type, is_deleted) VALUES (0, %d, X'5F5F6964785F3130325F6964785F75725F6E616D65', 201001, 5, 0, 0, 3, 1, 20, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 102, 2, 202001, 0, 1, 0, 0, 0, X'', 1, 0, X'', 0, 1701765983004840, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 101005, 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0, 0)";
+    char sql[4096];
+    sprintf(sql, a, 20000+(++tmp_value));
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql, affected_rows))) {
         LOG_INFO("run_insert_all_table_history failed", KR(ret), K(affected_rows));
     } else {
         LOG_INFO("run_insert_all_table_history succeeded", K(affected_rows));
@@ -3378,11 +3376,10 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto run_insert_all_table=[&](ObISQLClient& sql_client) { 
     int ret = OB_SUCCESS;
     int64_t affected_rows;
-    ObSqlString sql;
-    if(sql.length() == 0) {
-      all_table.splice_insert_sql(OB_ALL_TABLE_TNAME, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    const char* a = "INSERT INTO __all_table (tenant_id, table_id, table_name, database_id, table_type, load_type, def_type, rowkey_column_num, index_column_num, max_used_column_id, session_id, sess_active_time, tablet_size, pctfree, autoinc_column_id, auto_increment, read_only, rowkey_split_pos, compress_func_name, expire_condition, is_use_bloomfilter, index_attributes_set, comment, block_size, collation_type, data_table_id, index_status, tablegroup_id, progressive_merge_num, index_type, index_using_type, part_level, part_func_type, part_func_expr, part_num, sub_part_func_type, sub_part_func_expr, sub_part_num, schema_version, view_definition, view_check_option, view_is_updatable, parser_name, gmt_create, gmt_modified, partition_status, partition_schema_version, pk_comment, row_store_type, store_format, duplicate_scope, progressive_merge_round, storage_format_version, table_mode, encryption, tablespace_id, sub_part_template_flags, dop, character_set_client, collation_connection, auto_part, auto_part_size, association_table_id, define_user_id, max_dependency_version, tablet_id, object_status, table_flags, truncate_version, external_file_location, external_file_location_access_info, external_file_format, external_file_pattern, ttl_definition, kv_attributes, name_generated_type) VALUES (0, %d, X'5F5F6964785F3130325F6964785F75725F6E616D65', 201001, 5, 0, 0, 3, 1, 20, 0, 0, 134217728, 10, 0, 1, 0, 0, X'6E6F6E65', X'', 0, 0, X'', 16384, 45, 102, 2, 202001, 0, 1, 0, 0, 0, X'', 1, 0, X'', 0, 1701765983004840, X'', 0, 0, NULL, now(6), now(6), 0, 0, X'', X'656E636F64696E675F726F775F73746F7265', X'44594E414D4943', 0, 1, 3, 0, X'', -1, 0, 1, 0, 0, 0, 0, -1, -1, -1, 101005, 1, 0, -1, NULL, NULL, NULL, NULL, X'', X'', 0)";
+    char sql[4096];
+    sprintf(sql, a, 20000+(++tmp_value));
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql, affected_rows))) {
         LOG_INFO("run_insert_all_table failed", KR(ret), K(affected_rows));
     } else {
         LOG_INFO("run_insert_all_table succeeded", K(affected_rows));
@@ -3391,11 +3388,10 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto run_insert_all_column=[&](ObISQLClient& sql_client) { 
     int ret = OB_SUCCESS;
     int64_t affected_rows;
-    ObSqlString sql;
-    if(sql.length() == 0) {
-      all_column.splice_insert_sql(OB_ALL_COLUMN_TNAME, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    const char* a = "INSERT INTO __all_column (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified) VALUES (0,%d,16,X'676D745F637265617465',0,0,0,18,0,25,6,0,1,0,0,0,NULL,X'43555252454E545F54494D455354414D50',NULL,0,63,X'',0,0,NULL,0,-32,0,0,now(6),now(6))";
+    char sql[4096];
+    sprintf(sql, a, 20000+(++tmp_value));
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql, affected_rows))) {
         LOG_INFO("run_insert_all_column failed", KR(ret), K(affected_rows));
     } else {
         LOG_INFO("run_insert_all_column succeeded", K(affected_rows));
@@ -3404,11 +3400,10 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto run_insert_all_column_history=[&](ObISQLClient& sql_client) { 
     int ret = OB_SUCCESS;
     int64_t affected_rows;
-    ObSqlString sql;
-    if(sql.length() == 0) {
-      all_column_history.splice_insert_sql(OB_ALL_COLUMN_HISTORY_TNAME, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    const char* a = "INSERT INTO __all_column_history (tenant_id, table_id, column_id, column_name, rowkey_position, index_position, partition_key_position, data_type, data_length, data_precision, data_scale, zero_fill, nullable, autoincrement, is_hidden, on_update_current_timestamp, orig_default_value_v2, cur_default_value_v2, cur_default_value, order_in_rowkey, collation_type, comment, schema_version, column_flags, extended_type_info, prev_column_id, srs_id, udt_set_id, sub_data_type, gmt_create, gmt_modified, is_deleted) VALUES (0,%d,16,X'676D745F637265617465',0,0,0,18,0,25,6,0,1,0,0,0,NULL,X'43555252454E545F54494D455354414D50',NULL,0,63,X'',0,0,NULL,0,-32,0,0,now(6),now(6), 0)";
+    char sql[4096];
+    sprintf(sql, a, 20000+(++tmp_value));
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql, affected_rows))) {
         LOG_INFO("run_insert_all_column_history failed", KR(ret), K(affected_rows));
     } else {
         LOG_INFO("run_insert_all_column_history succeeded", K(affected_rows));
@@ -3417,11 +3412,10 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto run_insert_all_ddl_operation=[&](ObISQLClient& sql_client) { 
     int ret = OB_SUCCESS;
     int64_t affected_rows;
-    ObSqlString sql;
-    if(sql.length() == 0) {
-      all_ddl_operation.splice_insert_sql(OB_ALL_DDL_OPERATION_TNAME, sql);
-    }
-    if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    const char* a = "INSERT INTO __all_ddl_operation (SCHEMA_VERSION, TENANT_ID, EXEC_TENANT_ID, USER_ID, DATABASE_ID, DATABASE_NAME, TABLEGROUP_ID, TABLE_ID, TABLE_NAME, OPERATION_TYPE, DDL_STMT_STR, gmt_modified) values (%ld, 0, 1, 0, 201001, '', 202001, 1, '', 4, X'', now(6))";
+    char sql[4096];
+    sprintf(sql, a, 1701765982879712+(++tmp_value)*8);
+    if(OB_FAIL(sql_client.write(exec_tenant_id, sql, affected_rows))) {
         LOG_INFO("run_insert_all_ddl_operation failed", KR(ret), K(affected_rows));
     } else {
         LOG_INFO("run_insert_all_ddl_operation succeeded", K(affected_rows));
