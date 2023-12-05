@@ -96,6 +96,6 @@ ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
   ObArray<ZypRow*> ret;
   count = std::min(count, array_.count()-head);
   ret.prepare_allocate(count);
-  for(int i=0;i<count;i++) ret[i]=array_.at(i);
+  for(int i=0;i<count;i++) ret[i]=array_.at(i), ret[i]->init_objs();
   return ret;
 }
