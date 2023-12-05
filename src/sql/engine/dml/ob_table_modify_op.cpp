@@ -1242,7 +1242,7 @@ int ObTableModifyOp::discharge_das_write_buffer()
 int ObTableModifyOp::get_next_row_from_child()
 {
   int ret = OB_SUCCESS;
-  if(zyp_enabled()) LOG_INFO("zyp get_next_row_from_child");
+  // if(zyp_enabled()) LOG_INFO("zyp get_next_row_from_child");
   clear_evaluated_flag();
   if (OB_FAIL(child_->get_next_row())) {
     if (OB_ITER_END != ret) {

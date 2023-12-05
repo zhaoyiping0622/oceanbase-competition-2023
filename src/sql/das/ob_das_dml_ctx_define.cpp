@@ -419,7 +419,7 @@ int ObDASWriteBuffer::try_add_row(const ObIArray<ObExpr*> &exprs,
       LOG_WARN("try add row with shadow row failed", KK(ret));
     } else if (!row_added) {
       // buff已经满了，add row 失败
-      if(zyp_enabled())LOG_INFO("zyp row_added", K(zyp_current_row-zyp_row_head));
+      // if(zyp_enabled())LOG_INFO("zyp row_added", K(zyp_current_row-zyp_row_head));
     } else if (OB_ISNULL(stored_row)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("stored row is null", K(ret));

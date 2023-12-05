@@ -378,7 +378,7 @@ int ObDASInsertOp::write_row(const ExprFixedArray &row,
                              ObChunkDatumStore::StoredRow *&stored_row,
                              bool &buffer_full)
 {
-  if(zyp_enabled()) LOG_INFO("zyp in write_row begin", K(stored_row));
+  // if(zyp_enabled()) LOG_INFO("zyp in write_row begin", K(stored_row));
   int ret = OB_SUCCESS;
   bool added = false;
   buffer_full = false;
@@ -391,7 +391,7 @@ int ObDASInsertOp::write_row(const ExprFixedArray &row,
   } else if (!added) {
     buffer_full = true;
   }
-  if(zyp_enabled()) LOG_INFO("zyp in write_row end", K(*stored_row));
+  // if(zyp_enabled()) LOG_INFO("zyp in write_row end", K(*stored_row));
   return ret;
 }
 

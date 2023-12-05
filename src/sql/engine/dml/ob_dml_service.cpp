@@ -30,6 +30,7 @@
 #include "lib/geo/ob_geo_utils.h"
 #include "sql/ob_sql_utils.h"
 #include "sql/engine/dml/ob_fk_checker.h"
+#include "share/ob_zyp.h"
 namespace oceanbase
 {
 using namespace common;
@@ -882,6 +883,7 @@ int ObDMLService::insert_row(const ObInsCtDef &ins_ctdef,
                              ObDMLRtCtx &dml_rtctx,
                              ObChunkDatumStore::StoredRow *&stored_row)
 {
+  // if(zyp_enabled()) LOG_INFO("zyp ObDMLService::insert_row begin:", K(stored_row));
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_dml_tablet_validity(dml_rtctx,
                                         *tablet_loc,
@@ -897,6 +899,7 @@ int ObDMLService::insert_row(const ObInsCtDef &ins_ctdef,
                                 stored_row))) {
     LOG_WARN("insert row to das failed", K(ret));
   }
+  // if(zyp_enabled()) LOG_INFO("zyp ObDMLService::insert_row end:", K(stored_row));
   return ret;
 }
 
@@ -1680,6 +1683,7 @@ int ObDMLService::write_row_to_das_op(const ObDASDMLBaseCtDef &ctdef,
       }
     }
     //2. try add row to das dml buffer
+    // TODO(zhaoyiping): 这里看看
     if (OB_SUCC(ret)) {
       if (OB_FAIL(dml_op->write_row(row, dml_rtctx.get_eval_ctx(), stored_row, buffer_full))) {
         LOG_WARN("insert row to das dml op buffer failed", K(ret), K(ctdef), K(rtdef));

@@ -192,7 +192,7 @@ int ObChunkDatumStore::StoredRow::do_build(StoredRow *&sr,
               ? deep_copy_unswizzling(zyp_datums[i], &datums[i], buf, buf_len, pos)
               : datums[i].deep_copy(zyp_datums[i], buf, buf_len, pos);
         }
-        LOG_INFO("zyp build one row");
+        // LOG_INFO("zyp build one row");
       }
     } else for (int64_t i = 0; i < exprs.count() && OB_SUCC(ret); i++) {
       ObExpr *expr = exprs.at(i);
