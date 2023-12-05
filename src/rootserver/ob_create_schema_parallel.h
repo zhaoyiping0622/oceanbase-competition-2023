@@ -2,6 +2,7 @@
 #define OCEANBASE_ROOTSERVER_OB_CREATE_SCHEMA_PARALLEL_H_
 #include "lib/thread/thread_mgr_interface.h"
 namespace oceanbase {
+const int CreateSchemaParallelCnt = 8;
 class OBCreateSchemaParallel : public lib::TGRunnable {
  public:
   OBCreateSchemaParallel(std::function<void()> func);
