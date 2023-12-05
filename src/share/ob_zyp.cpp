@@ -1,4 +1,5 @@
 #include "share/ob_zyp.h"
+#define USING_LOG_PREFIX SHARE_SCHEMA
 #include "share/datum/ob_datum.h"
 #include <mutex>
 
@@ -34,7 +35,7 @@ thread_local bool zyp_inited = false;
 
 using namespace oceanbase::common;
 
-oceanbase::PageArena<> ZypRow::allocator;
+oceanbase::common::ObSafeArena ZypRow::allocator("zyp_row");
 
 void ZypRow::add_varchar(ObObj* obj, ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
@@ -89,13 +90,11 @@ void ZypRow::add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp) {
 ObNewRow ZypRow::new_row() { init_objs(); return ObNewRow(get_cells(), get_cells_cnt()); }
 
 ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
-  auto head = idx_.fetch_add(count);
-  if(head>=array_.count()) {
-    return {};
-  }
   ObArray<ZypRow*> ret;
-  count = std::min(count, array_.count()-head);
   ret.prepare_allocate(count);
-  for(int i=0;i<count;i++) ret[i]=array_.at(head + i), ret[i]->init_objs();
+  int64_t size;
+  queue_.multi_pop((void**)ret.get_data(), count, size);
+  while(count>size) count--, ret.pop_back();
+  for(int i=0;i<ret.count();i++)ret[i]->init_objs();
   return ret;
 }

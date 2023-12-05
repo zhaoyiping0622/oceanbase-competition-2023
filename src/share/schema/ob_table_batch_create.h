@@ -3,6 +3,11 @@
 #include "lib/mysqlclient/ob_isql_client.h"
 #include "share/ob_dml_sql_splicer.h"
 #include "share/datum/ob_datum.h"
+#include "lib/allocator/ob_safe_arena.h"
+#include "share/ob_zyp.h"
+#include "lib/queue/ob_lighty_queue.h"
+#include "share/schema/ob_table_schema.h"
+#include <mutex>
 
 namespace oceanbase {
 
@@ -284,12 +289,10 @@ private:
 #define varbinary ObString
 #define bigunsigned uint64_t
 
-oceanbase::PageArena<> zyp_allocator;
-
 static ObString ZypToString(int8_t v) {
   char buf[32];
   int nr = sprintf(buf, "%u", v)+1;
-  char* ret = (char*)zyp_allocator.alloc(nr);
+  char* ret = (char*)ZypRow::allocator.alloc(nr);
   memcpy(ret, buf, nr);
   return ObString(ret);
 } 
@@ -297,7 +300,7 @@ static ObString ZypToString(int8_t v) {
 static ObString ZypToString(uint64_t v) {
   char buf[32];
   int nr = sprintf(buf, "%lu", v)+1;
-  char* ret = (char*)zyp_allocator.alloc(nr);
+  char* ret = (char*)ZypRow::allocator.alloc(nr);
   memcpy(ret, buf, nr);
   return ObString(ret);
 } 
@@ -305,7 +308,7 @@ static ObString ZypToString(uint64_t v) {
 static ObString ZypToString(int64_t v) {
   char buf[32];
   int nr = sprintf(buf, "%ld", v)+1;
-  char* ret = (char*)zyp_allocator.alloc(nr);
+  char* ret = (char*)ZypRow::allocator.alloc(nr);
   memcpy(ret, buf, nr);
   return ObString(ret);
 } 
@@ -315,7 +318,7 @@ static ObString ZypToString(const ObString& v) {
 
 static ObString ZypCopyString(const ObString& v) {
   auto nr = strlen(v.ptr())+1;
-  char* ret = (char*)zyp_allocator.alloc(nr);
+  char* ret = (char*)ZypRow::allocator.alloc(nr);
   strcpy(ret, v.ptr());
   return ObString(ret);
 } 
@@ -396,7 +399,7 @@ static ObString ZypCopyString(const ObString& v) {
       objs.prepare_allocate(get_cells_cnt()); \
       datums.prepare_allocate(get_cells_cnt()); \
       for(int i=0;i<datums.count();i++){ \
-        datums.at(i).ptr_ = ZypRow::allocator.alloc(8); \
+        datums.at(i).ptr_ = (char*)ZypRow::allocator.alloc(8); \
         assert(datums.at(i).ptr_!=nullptr); \
       }\
       int now=0;\
@@ -474,7 +477,7 @@ class TableBatchCreateByPass {
 public:
   using StartFunc = std::function<ObISQLClient*()>;
   using EndFunc = std::function<void(ObISQLClient*)>;
-  TableBatchCreateByPass(common::ObIArray<ObTableSchema>& tables, StartFunc start, EndFunc end);
+  TableBatchCreateByPass(common::ObIArray<share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end);
   ~TableBatchCreateByPass();
 
   using ParallelRunner = std::function<void()>;
@@ -499,17 +502,17 @@ public:
 
   std::atomic_long& get_core_all_column_idx();
 
-  void gen_all_core_table(ObTableSchema& table, ObArray<ZypRow*>& rows);
+  void gen_all_core_table(share::schema::ObTableSchema& table);
 
-  void gen_all_table(ObTableSchema& table, ObArray<ZypRow*> &rows);
+  void gen_all_table(share::schema::ObTableSchema& table);
 
-  void gen_all_table_history(ObTableSchema& table, ObArray<ZypRow*> &rows);
+  void gen_all_table_history(share::schema::ObTableSchema& table);
 
-  void gen_all_column(ObTableSchema& table, ObArray<ZypRow*> &rows);
+  void gen_all_column(share::schema::ObTableSchema& table);
 
-  void gen_all_column_history(ObTableSchema& table, ObArray<ZypRow*> &rows);
+  void gen_all_column_history(share::schema::ObTableSchema& table);
 
-  void gen_all_ddl_operation(ObTableSchema& table, ObArray<ZypRow*> &rows);
+  void gen_all_ddl_operation(share::schema::ObTableSchema& table);
 
   void run_insert_all_core_table();
 
@@ -527,7 +530,7 @@ public:
 private:
   StartFunc client_start_;
   EndFunc  client_end_;
-  common::ObIArray<ObTableSchema>& tables_;
+  common::ObIArray<share::schema::ObTableSchema>& tables_;
   uint64_t exec_tenant_id_;
   uint64_t tenant_id_;
   std::atomic_long core_all_table_idx_{-1};
@@ -537,12 +540,12 @@ private:
   std::once_flag column_flag_;
   int64_t now_;
 
-  ObArray<ZypRow*> all_core_table_rows_;
-  ObArray<ZypRow*> all_table_rows_;
-  ObArray<ZypRow*> all_column_rows_;
-  ObArray<ZypRow*> all_table_history_rows_;
-  ObArray<ZypRow*> all_column_history_rows_;
-  ObArray<ZypRow*> all_ddl_operation_rows_;
+  LightyQueue all_core_table_rows_;
+  LightyQueue all_table_rows_;
+  LightyQueue all_column_rows_;
+  LightyQueue all_table_history_rows_;
+  LightyQueue all_column_history_rows_;
+  LightyQueue all_ddl_operation_rows_;
 };
 
 }

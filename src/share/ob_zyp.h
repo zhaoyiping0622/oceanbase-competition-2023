@@ -4,6 +4,8 @@
 #include"lib/container/ob_array.h"
 #include"common/object/ob_object.h"
 #include"common/row/ob_row.h"
+#include "lib/queue/ob_lighty_queue.h"
+#include "lib/allocator/ob_safe_arena.h"
 
 extern __thread bool zyp_come;
 using zyp_string = oceanbase::common::ObString;
@@ -48,23 +50,19 @@ class ZypRow {
     void add_null(ObObj* obj, ObDatum* datum);
     void add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp);
     size_t to_string(const char* buf, size_t size) const {return 0;}
-    static oceanbase::PageArena<> allocator;
+    static oceanbase::common::ObSafeArena allocator;
 };
 
 class ZypInsertInfo {
 public:
   template<typename T>
   using ObArray = oceanbase::common::ObArray<T>;
-  ZypInsertInfo(ObArray<ZypRow*>& array):array_(array),idx_(0) {}
+  using LightyQueue = oceanbase::LightyQueue;
+  ZypInsertInfo(LightyQueue& queue):queue_(queue) {}
   ObArray<ZypRow*> get_row(int64_t count);
-  long count() {
-    long ret = array_.count()-idx_;
-    if(ret<0)return 0;
-    return ret;
-  }
+  long count() { return queue_.size(); }
 private:
-  const ObArray<ZypRow*>& array_;
-  std::atomic_long idx_;
+  LightyQueue& queue_;
 };
 
 extern thread_local ZypInsertInfo* zyp_insert_info;

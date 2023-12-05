@@ -381,17 +381,23 @@ TableBatchCreateByPass::TableBatchCreateByPass(common::ObIArray<ObTableSchema>& 
   exec_tenant_id_ = ObSchemaUtils::get_exec_tenant_id(tenant_id_);
   global_client_ = client_start_();
   now_ = ObTimeUtility::current_time();
+  all_core_table_rows_.init(10000);  
+  all_table_rows_.init(tables.count());  
+  all_column_rows_.init(20000);  
+  all_table_history_rows_.init(tables.count());  
+  all_column_history_rows_.init(20000);  
+  all_ddl_operation_rows_.init(tables.count());
 }
 
 TableBatchCreateByPass::~TableBatchCreateByPass() {
   client_end_(global_client_);
-  auto free_all=[&](ObArray<ZypRow*>&tmp) { for(int i=0;i<tmp.count();i++)OB_DELETE(ZypRow, "create_table", tmp.at(i)); };
-  free_all(all_core_table_rows_);
-  free_all(all_table_rows_);
-  free_all(all_column_rows_);
-  free_all(all_table_history_rows_);
-  free_all(all_column_history_rows_);
-  free_all(all_ddl_operation_rows_);
+  // auto free_all=[&](ObArray<ZypRow*>&tmp) { for(int i=0;i<tmp.count();i++)OB_DELETE(ZypRow, "create_table", tmp.at(i)); };
+  // free_all(all_core_table_rows_);
+  // free_all(all_table_rows_);
+  // free_all(all_column_rows_);
+  // free_all(all_table_history_rows_);
+  // free_all(all_column_history_rows_);
+  // free_all(all_ddl_operation_rows_);
 }
 
 void TableBatchCreateByPass::run_parallel(ParallelRunner func, std::function<bool()> run) {
@@ -436,14 +442,15 @@ void TableBatchCreateByPass::prepare_not_core() {
     auto& table = tables_.at(i);
     auto table_id = table.get_table_id();
     if(!is_core_table(table_id)) {
-      gen_all_table(table, all_table_rows_);
-      gen_all_column(table, all_column_rows_);
-      gen_all_table_history(table, all_table_history_rows_);
-      gen_all_column_history(table, all_column_history_rows_);
-      gen_all_ddl_operation(table, all_ddl_operation_rows_);
+      gen_all_table(table);
+      gen_all_column(table);
+      gen_all_table_history(table);
+      gen_all_column_history(table);
+      gen_all_ddl_operation(table);
     }
   };
   run_parallel_range(0, (int)tables_.count(), base_func);
+  LOG_INFO("prepare_not_core", K(tables_.count()), K(all_table_rows_.size()), K(all_column_rows_.size()), K(all_table_history_rows_.size()), K(all_column_history_rows_.size()), K(all_ddl_operation_rows_.size()));
 }
 
 void TableBatchCreateByPass::prepare_core() {
@@ -451,9 +458,10 @@ void TableBatchCreateByPass::prepare_core() {
     auto& table = tables_.at(i);
     auto table_id = table.get_table_id();
     if(is_core_table(table_id)) {
-      gen_all_core_table(table, all_core_table_rows_);
+      gen_all_core_table(table);
     }
   });
+  LOG_INFO("prepare_core", K(tables_.count()), K(all_core_table_rows_.size()));
 }
 int TableBatchCreateByPass::run() {
   int ret = OB_SUCCESS;
@@ -527,27 +535,27 @@ void TableBatchCreateByPass::init_core_all_column_idx() {
 }
 
 std::atomic_long& TableBatchCreateByPass::get_core_all_table_idx() {
-  if(OB_UNLIKELY(core_all_table_idx_ == 0)) {
+  if(OB_UNLIKELY(core_all_table_idx_ == -1)) {
     std::call_once(table_flag_, [&]() {init_core_all_table_idx();});
   }
   return core_all_table_idx_;
 }
 
 std::atomic_long& TableBatchCreateByPass::get_core_all_column_idx() {
-  if(OB_UNLIKELY(core_all_column_idx_ == 0)) {
+  if(OB_UNLIKELY(core_all_column_idx_ == -1)) {
     std::call_once(column_flag_, [&]() {init_core_all_column_idx();});
   }
   return core_all_column_idx_;
 }
 
-void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table, ObArray<ZypRow*>& rows) {
+void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table) {
   auto table_id = table.get_table_id();
   int ret = OB_SUCCESS;
   if(is_core_table(table_id)) {
     ZypAllTableRow* row = OB_NEW(ZypAllTableRow, "create_table");
     oceanbase::gen_table_dml(exec_tenant_id_, table, false, *row);
     auto tmp = row->gen_core_rows(get_core_all_table_idx());
-    for(int i=0;i<tmp.count();i++)rows.push_back(tmp.at(i));
+    for(int i=0;i<tmp.count();i++)all_core_table_rows_.push(tmp.at(i));
     OB_DELETE(ZypAllTableRow, "create_table", row);
     if (!table.is_view_table() || table.view_column_filled()) {
       for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
@@ -557,7 +565,7 @@ void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table, ObArray<Zy
           LOG_WARN("fail to gen_column_dml", KR(ret));
         } else {
           auto tmp=row->gen_core_rows(get_core_all_column_idx());
-          for(int i=0;i<tmp.count();i++)rows.push_back(tmp.at(i));
+          for(int i=0;i<tmp.count();i++)all_core_table_rows_.push(tmp.at(i));
           OB_DELETE(ZypAllColumnRow, "create_table", row);
         }
       }
@@ -565,22 +573,23 @@ void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table, ObArray<Zy
   }
 }
 
-void TableBatchCreateByPass::gen_all_table(ObTableSchema& table, ObArray<ZypRow*> &rows) {
-  if(!is_core_table(table.get_table_id()&&!table.is_view_table())) {
+void TableBatchCreateByPass::gen_all_table(ObTableSchema& table) {
+  if(!is_core_table(table.get_table_id())&&!table.is_view_table()) {
     ZypAllTableRow* row = OB_NEW(ZypAllTableRow, "create_table");
     oceanbase::gen_table_dml(exec_tenant_id_, table, false, *row);
-    rows.push_back(row);
+    all_table_rows_.push(row);
   }
 }
 
-void TableBatchCreateByPass::gen_all_table_history(ObTableSchema& table, ObArray<ZypRow*> &rows) {
+void TableBatchCreateByPass::gen_all_table_history(ObTableSchema& table) {
+  if(table.is_view_table()) return;
   ZypAllTableHistoryRow* row = OB_NEW(ZypAllTableHistoryRow, "create_table");
   oceanbase::gen_table_dml(exec_tenant_id_, table, false, *row);
   row->set_is_deleted(0);
-  rows.push_back(row);
+  all_table_history_rows_.push(row);
 }
 
-void TableBatchCreateByPass::gen_all_column(ObTableSchema& table, ObArray<ZypRow*> &rows) {
+void TableBatchCreateByPass::gen_all_column(ObTableSchema& table) {
   int ret = OB_SUCCESS;
   auto table_id = table.get_table_id();
   if(table.is_view_table()) return;
@@ -591,13 +600,13 @@ void TableBatchCreateByPass::gen_all_column(ObTableSchema& table, ObArray<ZypRow
       if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
         LOG_WARN("fail to gen_column_dml", KR(ret));
       } else {
-        rows.push_back(row);
+        all_column_rows_.push(row);
       }
     }
   }
 }
 
-void TableBatchCreateByPass::gen_all_column_history(ObTableSchema& table, ObArray<ZypRow*> &rows) {
+void TableBatchCreateByPass::gen_all_column_history(ObTableSchema& table) {
   int ret = OB_SUCCESS;
   auto table_id = table.get_table_id();
   if (!table.is_view_table() || table.view_column_filled()) {
@@ -608,13 +617,13 @@ void TableBatchCreateByPass::gen_all_column_history(ObTableSchema& table, ObArra
       if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
         LOG_WARN("fail to gen_column_dml", KR(ret));
       } else {
-        rows.push_back(row);
+        all_column_history_rows_.push(row);
       }
     }
   }
 }
 
-void TableBatchCreateByPass::gen_all_ddl_operation(ObTableSchema& table, ObArray<ZypRow*> &rows) {
+void TableBatchCreateByPass::gen_all_ddl_operation(ObTableSchema& table) {
   int ret = OB_SUCCESS;
   auto table_id = table.get_table_id();
   ZypAllDDLOperationRow* row = OB_NEW(ZypAllDDLOperationRow, "create_table");
@@ -645,7 +654,7 @@ void TableBatchCreateByPass::gen_all_ddl_operation(ObTableSchema& table, ObArray
   row->set_ddl_stmt_str("");
   row->set_gmt_modified(now_);
   row->set_gmt_create(now_);
-  rows.push_back(row);
+  all_ddl_operation_rows_.push(row);
 }
 
 void TableBatchCreateByPass::run_insert_all_core_table() { 
