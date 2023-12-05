@@ -281,7 +281,8 @@ int ObDASWriteBuffer::DmlShadowRow::shadow_copy(const ObIArray<ObExpr*> &exprs, 
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("column count not equal", K(*zyp_current_row), K(store_row_->cnt_));
     }
-  } else {
+  } 
+  if(OB_SUCC(ret)) {
     ObDatum *datum = nullptr;
     ObDatum *cells = store_row_->cells();
     for (int64_t i = 0; OB_SUCC(ret) && i < exprs.count(); i++) {
@@ -454,6 +455,9 @@ int ObDASWriteBuffer::try_add_row(const DmlShadowRow &sr,
   } else {
     ret = add_row_to_store(sr, memory_limit, row_added, stored_row);
   }
+  if(OB_FAIL(ret)) {
+    LOG_INFO("try_add_row failed", KR(ret));
+  }
   return ret;
 }
 
@@ -519,9 +523,10 @@ OB_INLINE int ObDASWriteBuffer::add_row_to_dlist(const ObChunkDatumStore::Shadow
   } else {
     char *buf = dml_row->payload_;
     int64_t buf_size = lsr->row_size_ + row_extend_size_ - ROW_HEAD_SIZE;
+    // TODO(zhaoyiping): 这里说buf不够的
     if (OB_FAIL(dml_row->copy_shadow_datums(lsr->cells(), lsr->cnt_, buf, buf_size,
                                             lsr->row_size_ + row_extend_size_, row_extend_size_/*extra_size*/))) {
-      LOG_WARN("failed to deep copy row", K(ret), K(lsr->row_size_), K(buf_size));
+      LOG_WARN("failed to deep copy row", K(ret), K(lsr->row_size_), K(buf_size), K(row_extend_size_), K(lsr->cnt_));
     } else {
       row_added = true;
       if (stored_row != nullptr) {
