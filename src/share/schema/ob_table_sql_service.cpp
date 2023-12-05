@@ -3190,8 +3190,10 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   std::atomic_long a{114514};
   ObCoreTableProxyBatch all_core_table_kv(OB_ALL_TABLE_TNAME, *global_sql_client, tenant_id, a);
 
-  for(int i=0;i<tables.count();i++) {
+  for(int64_t i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
+    auto table_id = table.get_table_id();
+    table.set_table_id(114514);
     gen_table_dml(exec_tenant_id, table, false, all_core_table);
     gen_table_dml(exec_tenant_id, table, false, all_table);
     all_core_table_kv.AddDMLSqlSplicer(all_core_table);
@@ -3225,20 +3227,22 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     all_ddl_operation.add_gmt_modified();
     for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
       ObColumnSchemaV2 column = **it;
+      auto column_id = column.get_column_id();
       gen_column_dml(exec_tenant_id, column, all_column);
       gen_column_dml(exec_tenant_id, column, all_column_history);
       all_column_history.add_column("is_deleted", 0);
       break;
     }
+    table.set_table_id(table_id);
     break;
   }
 
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
-    if(table.is_view_table()) {
-      gen_table_dml(exec_tenant_id, table, false, dml_all_table);
-      dml_all_table.finish_row();
-    } else {
+    // if(table.is_view_table()) {
+    //   gen_table_dml(exec_tenant_id, table, false, dml_all_table);
+    //   dml_all_table.finish_row();
+    // } else {
       ZypAllTableRow* row = OB_NEW(ZypAllTableRow, "create_table");
       oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
       if(is_core_table(table.get_table_id())) {
@@ -3248,22 +3252,22 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       } else {
         all_table_rows.push_back(row);
       }
-    }
+    // }
   }
 
   LOG_INFO("zyp view_idxs", K(view_idxs));
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
-    if(table.is_view_table()) {
-      gen_table_dml(exec_tenant_id, table, false, dml_all_table_history);
-      dml_all_table_history.add_column("is_deleted", 0);
-      dml_all_table_history.finish_row();
-    } else {
+    // if(table.is_view_table()) {
+    //   gen_table_dml(exec_tenant_id, table, false, dml_all_table_history);
+    //   dml_all_table_history.add_column("is_deleted", 0);
+    //   dml_all_table_history.finish_row();
+    // } else {
       ZypAllTableHistoryRow* row = OB_NEW(ZypAllTableHistoryRow, "create_table");
       oceanbase::gen_table_dml(exec_tenant_id, table, false, *row);
       row->set_is_deleted(0);
       all_table_history_rows.push_back(row);
-    }
+    // }
   }
   for(int i=0;i<tables.count();i++) {
     auto &table = tables.at(i);
@@ -3353,9 +3357,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       all_core_table_kv.getDML().splice_batch_insert_sql(OB_ALL_CORE_TABLE_TNAME, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-        LOG_INFO("run_insert_all_core_table failed", KR(ret));
+        LOG_INFO("run_insert_all_core_table failed", KR(ret), K(affected_rows));
     } else {
-        LOG_INFO("run_insert_all_core_table succeeded", KR(ret));
+        LOG_INFO("run_insert_all_core_table succeeded", K(affected_rows));
     }
   };
   auto run_insert_all_table_history=[&](ObISQLClient& sql_client) { 
@@ -3366,9 +3370,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       all_table_history.splice_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-        LOG_INFO("run_insert_all_table_history failed", KR(ret));
+        LOG_INFO("run_insert_all_table_history failed", KR(ret), K(affected_rows));
     } else {
-        LOG_INFO("run_insert_all_table_history succeeded", KR(ret));
+        LOG_INFO("run_insert_all_table_history succeeded", K(affected_rows));
     }
   };
   auto run_insert_all_table=[&](ObISQLClient& sql_client) { 
@@ -3379,9 +3383,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       all_table.splice_insert_sql(OB_ALL_TABLE_TNAME, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-        LOG_INFO("run_insert_all_table failed", KR(ret));
+        LOG_INFO("run_insert_all_table failed", KR(ret), K(affected_rows));
     } else {
-        LOG_INFO("run_insert_all_table succeeded", KR(ret));
+        LOG_INFO("run_insert_all_table succeeded", K(affected_rows));
     }
   };
   auto run_insert_all_column=[&](ObISQLClient& sql_client) { 
@@ -3392,9 +3396,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       all_column.splice_insert_sql(OB_ALL_COLUMN_TNAME, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-        LOG_INFO("run_insert_all_column failed", KR(ret));
+        LOG_INFO("run_insert_all_column failed", KR(ret), K(affected_rows));
     } else {
-        LOG_INFO("run_insert_all_column succeeded", KR(ret));
+        LOG_INFO("run_insert_all_column succeeded", K(affected_rows));
     }
   };
   auto run_insert_all_column_history=[&](ObISQLClient& sql_client) { 
@@ -3405,9 +3409,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       all_column_history.splice_insert_sql(OB_ALL_COLUMN_HISTORY_TNAME, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-        LOG_INFO("run_insert_all_column_history failed", KR(ret));
+        LOG_INFO("run_insert_all_column_history failed", KR(ret), K(affected_rows));
     } else {
-        LOG_INFO("run_insert_all_column_history succeeded", KR(ret));
+        LOG_INFO("run_insert_all_column_history succeeded", K(affected_rows));
     }
   };
   auto run_insert_all_ddl_operation=[&](ObISQLClient& sql_client) { 
@@ -3418,9 +3422,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       all_ddl_operation.splice_insert_sql(OB_ALL_DDL_OPERATION_TNAME, sql);
     }
     if(OB_FAIL(sql_client.write(exec_tenant_id, sql.ptr(), affected_rows))) {
-        LOG_INFO("run_insert_all_ddl_operation failed", KR(ret));
+        LOG_INFO("run_insert_all_ddl_operation failed", KR(ret), K(affected_rows));
     } else {
-        LOG_INFO("run_insert_all_ddl_operation succeeded", KR(ret));
+        LOG_INFO("run_insert_all_ddl_operation succeeded", K(affected_rows));
     }
   };
 
@@ -3502,21 +3506,21 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     LOG_INFO("csp wait done");
     csp.destroy();
     LOG_INFO("csp destroy");
-    ObISQLClient* client=client_start();
-    DEFER({client_end(client);});
-    ObSqlString sql;
-    LOG_INFO("all_table", K(sql));
-    dml_all_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
-    int64_t affected_rows;
-    if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
-      LOG_INFO("failed to insert __all_table");
-    }
-    LOG_INFO("all_table_history", K(sql));
-    sql.reuse();
-    dml_all_table_history.splice_batch_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
-    if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
-      LOG_INFO("failed to insert __all_table_history");
-    }
+    // ObISQLClient* client=client_start();
+    // DEFER({client_end(client);});
+    // ObSqlString sql;
+    // LOG_INFO("all_table", K(sql));
+    // dml_all_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
+    // int64_t affected_rows;
+    // if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    //   LOG_INFO("failed to insert __all_table");
+    // }
+    // LOG_INFO("all_table_history", K(sql));
+    // sql.reuse();
+    // dml_all_table_history.splice_batch_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
+    // if(OB_FAIL(client->write(exec_tenant_id, sql.ptr(), affected_rows))) {
+    //   LOG_INFO("failed to insert __all_table_history");
+    // }
     if(OB_FAIL(log_core_operation(*global_sql_client, exec_tenant_id, last_schema_version))) {
       LOG_WARN("failed to update last_schema_version", KR(ret), K(last_schema_version), K(exec_tenant_id));
     }
