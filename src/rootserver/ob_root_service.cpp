@@ -4978,7 +4978,7 @@ int ObRootService::do_restart()
   int ret = OB_SUCCESS;
 
   const int64_t tenant_id = OB_SYS_TENANT_ID;
-  SpinWLockGuard rs_list_guard(broadcast_rs_list_lock_);
+  // SpinWLockGuard rs_list_guard(broadcast_rs_list_lock_);
 
   // NOTE: following log print after lock
   FLOG_INFO("[ROOTSERVICE_NOTICE] start do_restart");
