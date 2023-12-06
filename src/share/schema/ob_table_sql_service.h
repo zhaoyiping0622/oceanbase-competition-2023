@@ -256,6 +256,10 @@ public:
       const ObTableSchema &table,
       const ObConstraint &cst);
 
+  int gen_table_dml(const uint64_t exec_tenant_id, const ObTableSchema &table,
+                    const bool update_object_status_ignore_version, share::ObDMLSqlSplicer &dml);
+  int gen_column_dml(const uint64_t exec_tenant_id, const ObColumnSchemaV2 &column, share::ObDMLSqlSplicer &dml);
+
 private:
 
   int add_table(common::ObISQLClient &sql_client, const ObTableSchema &table,
@@ -311,13 +315,10 @@ private:
                                const ObTableSchema &table);
   int add_interval_range_val(share::ObDMLSqlSplicer &dml,
                                const ObTableSchema &table);
-  int gen_table_dml(const uint64_t exec_tenant_id, const ObTableSchema &table,
-                    const bool update_object_status_ignore_version, share::ObDMLSqlSplicer &dml);
   int gen_table_options_dml(const uint64_t exec_tenant_id,
                             const ObTableSchema &table,
                             const bool update_object_status_ignore_version,
                             share::ObDMLSqlSplicer &dml);
-  int gen_column_dml(const uint64_t exec_tenant_id, const ObColumnSchemaV2 &column, share::ObDMLSqlSplicer &dml);
   int gen_constraint_dml(const uint64_t exec_tenant_id, const ObConstraint &constraint, share::ObDMLSqlSplicer &dml);
   int gen_constraint_column_dml(
       const uint64_t exec_tenant_id,

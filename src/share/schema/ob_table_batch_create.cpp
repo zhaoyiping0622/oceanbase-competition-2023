@@ -26,10 +26,12 @@
 #include "lib/time/ob_time_count.h"
 #include "rootserver/ob_ddl_service.h"
 #include "share/ob_zyp.h"
+#include "share/schema/ob_table_sql_service.h"
+
+using namespace oceanbase::share;
+using namespace oceanbase::share::schema;
 
 namespace oceanbase {
-
-using namespace share;
 
 template <typename T>
 int gen_table_dml(
@@ -81,7 +83,7 @@ int gen_table_dml(
         || OB_FAIL(t.set_tablet_size(table.get_tablet_size()))
         || OB_FAIL(t.set_pctfree(table.get_pctfree()))
         || OB_FAIL(t.set_autoinc_column_id(table.get_autoinc_column_id()))
-        || OB_FAIL(t.set_auto_increment(share::ObRealUInt64(table.get_auto_increment()).value()))
+        || OB_FAIL(t.set_auto_increment(ObRealUInt64(table.get_auto_increment()).value()))
         || OB_FAIL(t.set_read_only(table.is_read_only()))
         || OB_FAIL(t.set_rowkey_split_pos(table.get_rowkey_split_pos()))
         || OB_FAIL(t.set_compress_func_name(table.get_compress_func_name()))
@@ -400,43 +402,6 @@ TableBatchCreateByPass::~TableBatchCreateByPass() {
   // free_all(all_ddl_operation_rows_);
 }
 
-void TableBatchCreateByPass::run_parallel(ParallelRunner func, std::function<bool()> run) {
-  int ret = OB_SUCCESS;
-  auto trace_id = ObCurTraceId::get_trace_id();
-  auto runner = [&]() {
-    if(trace_id!=nullptr) {
-      ObCurTraceId::set(*trace_id);
-    }
-    while(run()) func(); 
-  };
-  OBCreateSchemaParallel csp(runner);
-  if(OB_FAIL(csp.init())){
-    LOG_WARN("failed to init csp", K(ret));
-  } else if(OB_FAIL(csp.start())) {
-    LOG_WARN("failed to start csp", K(ret));
-  } else {
-    LOG_INFO("csp wait begin");
-    csp.wait();
-    LOG_INFO("csp wait done");
-    csp.destroy();
-    LOG_INFO("csp destroy");
-  }
-}
-
-void TableBatchCreateByPass::run_parallel(std::vector<ParallelRunner> &funcs) {
-  int ret = OB_SUCCESS;
-  std::atomic_int idx{0};
-  run_parallel([&]() {
-    int now = idx++;
-    if(now<funcs.size()) funcs[now]();
-  }, [&](){return idx<funcs.size();});
-}
-
-void TableBatchCreateByPass::run_parallel_range(int beg, int end, std::function<void(int)> func) {
-  std::atomic_int idx{beg};
-  run_parallel([&]() { int now = idx++; if(now<end) func(now); }, [&](){return idx<end;});
-}
-
 void TableBatchCreateByPass::prepare_not_core() {
   auto base_func = [&](int i) {
     auto& table = tables_.at(i);
@@ -449,12 +414,14 @@ void TableBatchCreateByPass::prepare_not_core() {
       gen_all_ddl_operation(table);
     }
   };
-  run_parallel_range(0, (int)tables_.count(), base_func);
+  ParallelRunner runner;
+  runner.run_parallel_range(0, (int)tables_.count(), base_func);
   LOG_INFO("prepare_not_core", K(tables_.count()), K(all_table_rows_.size()), K(all_column_rows_.size()), K(all_table_history_rows_.size()), K(all_column_history_rows_.size()), K(all_ddl_operation_rows_.size()));
 }
 
 void TableBatchCreateByPass::prepare_core() {
-  run_parallel_range(0, (int)tables_.count(), [&](int i) {
+  ParallelRunner runner;
+  runner.run_parallel_range(0, (int)tables_.count(), [&](int i) {
     auto& table = tables_.at(i);
     auto table_id = table.get_table_id();
     if(is_core_table(table_id)) {
@@ -510,7 +477,8 @@ int TableBatchCreateByPass::run() {
     
   std::atomic_int idx{0};
 
-  run_parallel([&]() {
+  ParallelRunner runner;
+  runner.run_parallel([&]() {
     int a = idx++;
     while (a<run_insert.size() && insert_info[a]->count()) {
       run(a);
@@ -734,6 +702,46 @@ void TableBatchCreateByPass::run_insert_all_ddl_operation() {
   }
 };
 
+void TableBatchCreateNormal::prepare() {
+  ParallelRunner runner;
+  runner.run_parallel_range(0, (int)tables_.count(), [&](int i) {
+    auto &table = tables_.at(i);
+    ObDMLSqlSplicer dml;
+    sql_service_->gen_table_dml(exec_tenant_id_, table, false, dml);
+    ObSqlString sql;
+    dml.splice_insert_sql(OB_ALL_TABLE_TNAME, sql);
+    char* buf = new char[sql.length()+1];
+    memcpy(buf, sql.ptr(), sql.length());
+    buf[sql.length()] = 0;
+    queue_.push(buf);
+    dml.add_column("is_deleted", 0);
+    sql.reuse();
+    dml.splice_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
+    buf = new char[sql.length()+1];
+    memcpy(buf, sql.ptr(), sql.length());
+    buf[sql.length()] = 0;
+    queue_.push(buf);
+  });
+}
+void TableBatchCreateNormal::run() {
+  ParallelRunner runner;
+  runner.run_parallel([&](){
+    void* sql;
+    if(OB_SUCCESS == queue_.pop(sql)) {
+      auto* client = client_start_();
+      DEFER({client_end_(client);});
+      int64_t affected_rows;
+      client->write(tenant_id_, (char*)sql, affected_rows);
+    }
+  }, [&](){return queue_.size()!=0;});
+}
+
+TableBatchCreateNormal::TableBatchCreateNormal(ObIArray<oceanbase::share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end, ObTableSqlService* sql_service):
+  client_start_(start), client_end_(end), tables_(tables), sql_service_(sql_service) {
+  tenant_id_ = tables.at(0).get_tenant_id();
+  exec_tenant_id_ = ObSchemaUtils::get_exec_tenant_id(tenant_id_);
+  queue_.init(tables.count()*2);
+}
 
 }
 

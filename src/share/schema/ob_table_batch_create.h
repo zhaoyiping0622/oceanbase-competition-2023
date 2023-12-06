@@ -487,14 +487,6 @@ public:
   TableBatchCreateByPass(common::ObIArray<share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end);
   ~TableBatchCreateByPass();
 
-  using ParallelRunner = std::function<void()>;
-
-  void run_parallel(ParallelRunner func, std::function<bool()> end);
-
-  void run_parallel(std::vector<ParallelRunner> &funcs);
-
-  void run_parallel_range(int beg, int end, std::function<void(int)> func);
-
   void prepare_not_core();
 
   void prepare_core();
@@ -554,6 +546,32 @@ private:
   LightyQueue all_column_history_rows_;
   LightyQueue all_ddl_operation_rows_;
 };
-
 }
+namespace share {
+namespace schema {
+class ObTableSqlService;
+}
+}
+
+namespace schema {
+// 只针对view
+class TableBatchCreateNormal {
+public:
+  using StartFunc = std::function<ObISQLClient*()>;
+  using EndFunc = std::function<void(ObISQLClient*)>;
+  using ObTableSqlService = share::schema::ObTableSqlService;
+
+  TableBatchCreateNormal(ObIArray<oceanbase::share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end, ObTableSqlService* sql_service);
+  StartFunc client_start_;
+  EndFunc  client_end_;
+  ObIArray<oceanbase::share::schema::ObTableSchema>& tables_;
+  void prepare();
+  void run();
+  LightyQueue queue_;
+  ObTableSqlService* sql_service_;
+  int64_t tenant_id_;
+  int64_t exec_tenant_id_;
+};
+}
+
 }

@@ -2381,6 +2381,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   }
   oceanbase::schema::TableBatchCreateByPass core(core_tables, client_start, client_end);
   oceanbase::schema::TableBatchCreateByPass other(tables, client_start, client_end);
+  oceanbase::schema::TableBatchCreateNormal view(view_tables, client_start, client_end, this);
   std::thread core_prepare_thread([&](){
     set_trace_id();
     lib::set_thread_name("core_preapre_thread");
@@ -2390,6 +2391,11 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     set_trace_id();
     lib::set_thread_name("other_prepare_thread");
     other.prepare_not_core();
+  });
+  std::thread view_prepare_thread([&]() {
+    set_trace_id();
+    lib::set_thread_name("view_prepare_thread");
+    view.prepare();
   });
   core_prepare_thread.join();
   std::thread core_run_thread([&](){
@@ -2412,29 +2418,36 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   }
   auto* client = client_start();
   log_core_operation(*client, tables.at(0).get_tenant_id(), last_schema_version);
-  ObDMLSqlSplicer dml_table, dml_table_history;
-  auto tenant_id = tables.at(0).get_tenant_id();
-  for(int i=0;i<view_tables.count();i++) {
-    auto& table = view_tables.at(i);
-    auto exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
-    gen_table_dml(exec_tenant_id, table, false, dml_table);
-    dml_table.finish_row();
-    gen_table_dml(exec_tenant_id, table, false, dml_table_history);
-    dml_table_history.add_column("is_deleted", 0);
-    dml_table_history.finish_row();
-  }
+  // ObDMLSqlSplicer dml_table, dml_table_history;
+  // auto tenant_id = tables.at(0).get_tenant_id();
+  // for(int i=0;i<view_tables.count();i++) {
+  //   auto& table = view_tables.at(i);
+  //   auto exec_tenant_id = ObSchemaUtils::get_exec_tenant_id(tenant_id);
+  //   gen_table_dml(exec_tenant_id, table, false, dml_table);
+  //   dml_table.finish_row();
+  //   gen_table_dml(exec_tenant_id, table, false, dml_table_history);
+  //   dml_table_history.add_column("is_deleted", 0);
+  //   dml_table_history.finish_row();
+  // }
   other_run_thread.join();
-  ObSqlString sql;
-  int64_t affected_rows;
-  dml_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
-  if(OB_FAIL(client->write(tenant_id, sql.ptr(), affected_rows))) {
-    LOG_INFO("failed to write view table", KR(ret));
-  }
-  sql.reuse();
-  dml_table_history.splice_batch_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
-  if(OB_FAIL(client->write(tenant_id, sql.ptr(), affected_rows))) {
-    LOG_INFO("failed to write view column", KR(ret));
-  }
+  view_prepare_thread.join();
+  std::thread view_run_thread([&](){
+    set_trace_id();
+    lib::set_thread_name("view_run_thread");
+    view.run();
+  });
+  view_run_thread.join();
+  // ObSqlString sql;
+  // int64_t affected_rows;
+  // dml_table.splice_batch_insert_sql(OB_ALL_TABLE_TNAME, sql);
+  // if(OB_FAIL(client->write(tenant_id, sql.ptr(), affected_rows))) {
+  //   LOG_INFO("failed to write view table", KR(ret));
+  // }
+  // sql.reuse();
+  // dml_table_history.splice_batch_insert_sql(OB_ALL_TABLE_HISTORY_TNAME, sql);
+  // if(OB_FAIL(client->write(tenant_id, sql.ptr(), affected_rows))) {
+  //   LOG_INFO("failed to write view column", KR(ret));
+  // }
   client_end(client);
   return OB_SUCCESS;
 }
