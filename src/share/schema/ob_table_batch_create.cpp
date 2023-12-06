@@ -443,18 +443,18 @@ int TableBatchCreateByPass::run() {
     OB_NEW(ZypInsertInfo, "insert_info", all_core_table_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_table_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_column_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_ddl_operation_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_table_history_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_column_history_rows_),
-    OB_NEW(ZypInsertInfo, "insert_info", all_ddl_operation_rows_),
   };
 
   std::vector<std::function<void()>> run_insert = {
     [&](){ run_insert_all_core_table(); },
     [&](){ run_insert_all_table(); },
     [&](){ run_insert_all_column(); },
+    [&](){ run_insert_all_ddl_operation(); },
     [&](){ run_insert_all_table_history(); },
     [&](){ run_insert_all_column_history(); },
-    [&](){ run_insert_all_ddl_operation(); },
   };
 
   DEFER({for(auto x:insert_info)OB_DELETE(ZypInsertInfo, "insert_info", x);});

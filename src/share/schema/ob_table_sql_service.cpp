@@ -2371,6 +2371,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   auto set_trace_id = [&]() {if(trace_id) ObCurTraceId::set(*trace_id);};
   ObArray<ObTableSchema> core_tables;
   ObArray<ObTableSchema> view_tables;
+  // __all_table_history
+  // __all_column_history
+  // 要在执行完core之后建
   for(int i=0;i<tables.count();i++) {
     auto& table = tables.at(i);
     if(table.is_view_table()) {
@@ -2399,6 +2402,7 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     core.run();
   });
   core_run_thread.join();
+  // 至此 有__all_table和__all_column了
   other_prepare_thread.join();
   std::thread view_prepare_thread([&]() {
     set_trace_id();
