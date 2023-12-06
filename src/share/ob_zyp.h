@@ -12,6 +12,8 @@ using zyp_string = oceanbase::common::ObString;
 extern zyp_string zyp_extra_info;
 
 #define ZYP_LOG_INFO(...) if(zyp_come) LOG_INFO(__VA_ARGS__)
+#define ZYP_NEW(type,label,...) new type(__VA_ARGS__) // OB_NEW(type,label,__VA_ARGS__)
+#define ZYP_DELETE(type,label,ptr,...) delete ((type*)(ptr)) // OB_DELETE(type,label,point,__VA_ARGS__)
 
 void zyp_enable();
 bool zyp_enabled();
@@ -22,6 +24,11 @@ void zyp_unlimit_log(const char* buf, size_t size);
 
 class ConcurrentPageArena {
 public:
+  template<typename T, typename ...Args>
+  void alloc(T*& p, Args&& ...args) {
+    p = (T*) alloc(sizeof(T));
+    new (p) T(std::forward<Args>(args)...);
+  }
   // using SpinRWLock;
   void* alloc(size_t size) {
     lock_.wrlock();

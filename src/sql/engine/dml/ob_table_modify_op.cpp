@@ -1283,7 +1283,7 @@ int ObTableModifyOp::inner_get_next_row()
         LOG_WARN("check status failed", K(ret));
       } else {
         if(/* FIXME(zhaoyiping): 这个记得打开 */ (zyp_enabled() && zyp_inited) || false) {
-          OB_DELETE(ZypRow, "zyp_row", (*zyp_current_row));
+          ZYP_DELETE(ZypRow, "zyp_row", (*zyp_current_row));
           zyp_current_row++;
           if(zyp_current_row == zyp_row_tail) {
             iter_end_ = true;

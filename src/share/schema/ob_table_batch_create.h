@@ -340,7 +340,7 @@ static ObString ZypCopyString(const ObString& v) {
 #define init_obj_name(a) init_obj_##a
 
 #define to_core_row(x,y,...) \
-  tmp=OB_NEW(ZypAllCoreTableRow, "core_row");\
+  tmp=ZYP_NEW(ZypAllCoreTableRow, "core_row");\
   tmp->set_gmt_create(now);\
   tmp->set_gmt_modified(now);\
   tmp->set_table_name(_table_name_);\
