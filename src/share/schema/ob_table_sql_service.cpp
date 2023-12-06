@@ -2392,11 +2392,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     lib::set_thread_name("other_prepare_thread");
     other.prepare_not_core();
   });
-  std::thread view_prepare_thread([&]() {
-    set_trace_id();
-    lib::set_thread_name("view_prepare_thread");
-    view.prepare();
-  });
   core_prepare_thread.join();
   std::thread core_run_thread([&](){
     set_trace_id();
@@ -2405,6 +2400,11 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   });
   core_run_thread.join();
   other_prepare_thread.join();
+  std::thread view_prepare_thread([&]() {
+    set_trace_id();
+    lib::set_thread_name("view_prepare_thread");
+    view.prepare();
+  });
   std::thread other_run_thread([&](){
     set_trace_id();
     lib::set_thread_name("other_run_thread");
@@ -2448,6 +2448,23 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   // if(OB_FAIL(client->write(tenant_id, sql.ptr(), affected_rows))) {
   //   LOG_INFO("failed to write view column", KR(ret));
   // }
+  ParallelRunner runner;
+  runner.run_parallel_range(
+    0, (int)tables.count(), [&](int i) {
+      auto &table = tables.at(i);
+      auto table_id = table.get_table_id();
+      if ((table.is_index_table() || table.is_materialized_view() || table.is_aux_vp_table() || table.is_aux_lob_table()) &&
+          !(ObSysTableChecker::is_sys_table_index_tid(table_id) || is_sys_lob_table(table_id))) {
+        LOG_INFO("update_data_table_schema_version");
+        auto *client = client_start();
+        DEFER({client_end(client);});
+        if (OB_FAIL(update_data_table_schema_version(*client, table.get_tenant_id(),
+            table.get_data_table_id(), table.get_in_offline_ddl_white_list()))) {
+          LOG_WARN("fail to update schema_version", K(ret));
+        }
+      }
+    }
+  );
   client_end(client);
   return OB_SUCCESS;
 }
