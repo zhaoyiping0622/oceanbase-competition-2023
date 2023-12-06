@@ -411,10 +411,10 @@ void TableBatchCreateByPass::prepare_not_core() {
     if(!is_core_table(table_id)) {
       gen_all_table(table);
       gen_all_column(table);
-      gen_all_table_history(table);
-      gen_all_column_history(table);
-      gen_all_ddl_operation(table);
     }
+    gen_all_table_history(table);
+    gen_all_column_history(table);
+    gen_all_ddl_operation(table);
   };
   ParallelRunner runner;
   runner.run_parallel_range(0, (int)tables_.count(), base_func);
