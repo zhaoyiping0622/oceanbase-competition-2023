@@ -542,7 +542,7 @@ void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table) {
     ZYP_LOCAL_DELETE(ZypAllTableRow, "create_table", row);
     if (!table.is_view_table() || table.view_column_filled()) {
       for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
-        ObColumnSchemaV2 column = **it;
+        ObColumnSchemaV2& column = **it;
         ZypAllColumnRow* row = ZYP_LOCAL_NEW(ZypAllColumnRow, "create_table");
         if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
           LOG_WARN("fail to gen_column_dml", KR(ret));
