@@ -2006,6 +2006,8 @@ int ObRootService::execute_bootstrap(const obrpc::ObBootstrapArg &arg)
       LOG_WARN("failed to update cpu_quota_concurrency", K(ret));
     }
 
+    LOG_INFO("zyp bootstrap after do restart");
+
     if (OB_SUCC(ret)) {
       char ori_min_server_version[OB_SERVER_VERSION_LENGTH] = {'\0'};
       uint64_t ori_cluster_version = GET_MIN_CLUSTER_VERSION();
@@ -4978,7 +4980,7 @@ int ObRootService::do_restart()
   int ret = OB_SUCCESS;
 
   const int64_t tenant_id = OB_SYS_TENANT_ID;
-  SpinWLockGuard rs_list_guard(broadcast_rs_list_lock_);
+  // SpinWLockGuard rs_list_guard(broadcast_rs_list_lock_);
 
   // NOTE: following log print after lock
   FLOG_INFO("[ROOTSERVICE_NOTICE] start do_restart");
@@ -4990,6 +4992,8 @@ int ObRootService::do_restart()
     ret = OB_NOT_MASTER;
     FLOG_WARN("not master", KR(ret));
   }
+
+  LOG_INFO("do_restart part 1");
 
   // // renew master rootservice, ignore error
   // if (OB_SUCC(ret)) {
@@ -5005,6 +5009,8 @@ int ObRootService::do_restart()
   } else {
     FLOG_INFO("fetch root partition info succeed", KR(ret));
   }
+
+  LOG_INFO("do_restart part 2");
 
   // // broadcast root server address, ignore error
   // if (OB_SUCC(ret)) {
