@@ -37,57 +37,45 @@ thread_local bool zyp_inited = false;
 
 using namespace oceanbase::common;
 
-void ZypRow::add_varchar(ObObj* obj, ObDatum* datum, const ObString&s) {
+void ZypRow::add_varchar(ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
     // obj->set_varchar("");
     datum->set_null();
   } else {
-    obj->set_varchar(s);
     datum->set_string(s);
   }
-  obj->set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
 }
-void ZypRow::add_varbinary(ObObj* obj, ObDatum* datum, const ObString&s) {
+void ZypRow::add_varbinary(ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
     // obj->set_varbinary("");
     datum->set_null();
   } else {
-    obj->set_varbinary(s);
     datum->set_string(s);
   }
-  obj->set_collation_type(CS_TYPE_BINARY);
 }
-void ZypRow::add_longtext(ObObj* obj, ObDatum* datum, const ObString&s) {
+void ZypRow::add_longtext(ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
     // obj->set_string(oceanbase::ObLongTextType, "");
     datum->set_null();
   } else {
-    obj->set_string(oceanbase::ObLongTextType, s);
     datum->set_string(s);
   }
-  obj->set_collation_type(CS_TYPE_UTF8MB4_GENERAL_CI);
 }
-void ZypRow::add_bigint(ObObj* obj, ObDatum* datum, int64_t v) {
-  obj->set_int(v);
+void ZypRow::add_bigint(ObDatum* datum, int64_t v) {
   datum->set_int(v);
 }
-void ZypRow::add_tinyint(ObObj* obj, ObDatum* datum, int8_t v) {
-  obj->set_tinyint(v);
+void ZypRow::add_tinyint(ObDatum* datum, int8_t v) {
   datum->set_int(v);
 }
-void ZypRow::add_bigunsigned(ObObj* obj, ObDatum* datum, uint64_t v) {
-  obj->set_uint64(v);
+void ZypRow::add_bigunsigned(ObDatum* datum, uint64_t v) {
   datum->set_uint(v);
 }
-void ZypRow::add_null(ObObj* obj, ObDatum* datum) {
-  obj->set_null();
+void ZypRow::add_null(ObDatum* datum) {
   datum->set_null();
 }
-void ZypRow::add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp) {
-  obj->set_timestamp(timestamp);
+void ZypRow::add_timestamp(ObDatum* datum, int64_t timestamp) {
   datum->set_timestamp(timestamp);
 }
-ObNewRow ZypRow::new_row() { init_objs(); return ObNewRow(get_cells(), get_cells_cnt()); }
 
 ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
   ObArray<ZypRow*> ret;
@@ -95,6 +83,6 @@ ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
   int64_t size;
   queue_.multi_pop((void**)ret.get_data(), count, size);
   while(count>size) count--, ret.pop_back();
-  for(int i=0;i<ret.count();i++)ret[i]->init_objs();
+  for(int i=0;i<ret.count();i++)ret[i]->init_datums();
   return ret;
 }

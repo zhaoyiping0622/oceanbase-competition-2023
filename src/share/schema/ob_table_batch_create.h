@@ -330,14 +330,13 @@ static ObString ZypCopyString(const ObString& v) {
 #define row_cnt(...) +1
 
 #define member_name(a) a##_member_
-#define member_obj_name(a) a##_member_obj_
 #define member_datum_name(a) a##_member_datum_
 #define member_is_null_name(a) a##_member_is_null_
 #define member_is_nullable_name(a) a##_member_is_nullable_
 #define set_member_name(a) set_##a
 #define get_member_name(a) get_##a
 #define set_member_null_name(a) set_##a##_null
-#define init_obj_name(a) init_obj_##a
+#define init_datum_name(a) init_datum_##a
 
 #define to_core_row(x,y,...) \
   tmp=ZYP_LOCAL_NEW(ZypAllCoreTableRow, "core_row");\
@@ -352,11 +351,13 @@ static ObString ZypCopyString(const ObString& v) {
   else tmp->set_member_name(column_value)(ZypToString(member_name(x)));\
   ret[cnt++]=tmp;
 
+#define member_null(a,...) \
+  bool member_is_null_name(a):1;
+
 // 之后加一个no copy的接口
 #define member(a,b,...) \
   private:\
     b member_name(a);\
-    bool member_is_null_name(a){true};\
     static const bool member_is_nullable_name(a);\
   public:\
     int set_member_name(a)(const b& tmp) {\
@@ -374,47 +375,49 @@ static ObString ZypCopyString(const ObString& v) {
 #define member_static_null(a,b,c,d,...) \
   const bool d::member_is_nullable_name(a)=c;
 
-#define member_obj(a,b,...) \
+#define member_datum(a,b,...) \
   private: \
-    ObObj *member_obj_name(a); \
     ObDatum *member_datum_name(a);\
-    void init_obj_name(a)() { \
+    void init_datum_name(a)() { \
       if(member_is_null_name(a)) { \
-        add_null(member_obj_name(a), member_datum_name(a)); \
+        add_null(member_datum_name(a)); \
       } else { \
-        add_##b(member_obj_name(a), member_datum_name(a), member_name(a)); \
+        add_##b(member_datum_name(a), member_name(a)); \
       } \
     }
 
-#define init_obj(a,...) init_obj_name(a)();
+#define init_datum(a,...) init_datum_name(a)();
 
-#define member_obj_point_init(a,...) \
-  member_obj_name(a)=&objs.at(now); member_datum_name(a)=&datums.at(now);now++;
+#define member_datum_point_init(a,...) \
+  member_datum_name(a)=&datums.at(now);now++;
+
+#define null_class_name(class_name) class_name##_null
 
 #define TABLE_CLASS_DECLARE(class_name, table_name, table_rows) \
-  class class_name : public ZypRow { \
+  struct null_class_name(class_name) { \
+    table_rows(member_null);\
+    null_class_name(class_name)() { memset(this, 0xff, sizeof(*this)); }\
+  }; \
+  class class_name : public ZypRow, public null_class_name(class_name) { \
     static const char* _table_name_; \
     table_rows(member);\
-    table_rows(member_obj);\
+    table_rows(member_datum);\
     std::array<uint64_t, table_rows(row_cnt)> datum_buf; \
-    std::array<ObObj, table_rows(row_cnt)> objs; \
     std::array<ObDatum, table_rows(row_cnt)> datums; \
   public:\
     class_name() { \
       for(int i=0;i<cells_cnt;i++){ \
         datums[i].ptr_ = (char*)&datum_buf[i]; \
-        assert(datums[i].ptr_!=nullptr); \
       }\
       int now=0;\
-      table_rows(member_obj_point_init);\
+      table_rows(member_datum_point_init);\
     }     \
     virtual ~class_name() { \
     } \
-    virtual void init_objs() { \
-      table_rows(init_obj); \
+    virtual void init_datums() { \
+      table_rows(init_datum); \
     } \
     virtual ObDatum* get_datums() { return datums.data(); } \
-    virtual ObObj* get_cells() { return objs.data(); }\
     static const int cells_cnt = table_rows(row_cnt); \
     virtual size_t get_cells_cnt() const { return cells_cnt; }\
     template<typename T>\
@@ -447,19 +450,18 @@ TABLE_CLASS_DECLARE(ZypAllDDLOperationRow, "__all_ddl_operation", ZYP_ALL_DDL_OP
 #undef member
 #undef row_cnt
 #undef member_name
-#undef member_obj_name
 #undef member_datum_name
 #undef member_is_null_name
 #undef member_is_nullable_name
 #undef set_member_name
 #undef get_member_name
 #undef set_member_null_name
-#undef init_obj_name
+#undef init_datum_name
 #undef to_core_row
 #undef member_static_null
-#undef member_obj
-#undef init_obj
-#undef member_obj_point_init
+#undef member_datum
+#undef init_datum
+#undef member_datum_point_init
 #undef TABLE_CLASS_DECLARE
 
 #undef timestamp

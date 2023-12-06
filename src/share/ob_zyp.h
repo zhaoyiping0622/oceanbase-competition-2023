@@ -59,26 +59,22 @@ namespace common {
 class ZypRow {
   public:
     using ObDatum = oceanbase::common::ObDatum;
-    using ObObj = oceanbase::common::ObObj;
-    using ObNewRow = oceanbase::common::ObNewRow;
     template<typename T>
     using ObArray = oceanbase::common::ObArray<T>;
     using ObString = oceanbase::common::ObString;
-    virtual void init_objs() = 0;
-    virtual ObObj* get_cells() = 0;
+    virtual void init_datums() = 0;
     virtual ObDatum* get_datums() = 0;
     virtual size_t get_cells_cnt() const = 0;
-    oceanbase::common::ObNewRow new_row();
     virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long &row_id) = 0;
     virtual ~ZypRow() {}
-    void add_varchar(ObObj* obj, ObDatum* datum, const ObString&s);
-    void add_varbinary(ObObj* obj, ObDatum* datum, const ObString&s);
-    void add_longtext(ObObj* obj, ObDatum* datum, const ObString&s);
-    void add_bigint(ObObj* obj, ObDatum* datum, int64_t v);
-    void add_tinyint(ObObj* obj, ObDatum* datum, int8_t v);
-    void add_bigunsigned(ObObj* obj, ObDatum* datum, uint64_t v);
-    void add_null(ObObj* obj, ObDatum* datum);
-    void add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp);
+    void add_varchar(ObDatum* datum, const ObString&s);
+    void add_varbinary(ObDatum* datum, const ObString&s);
+    void add_longtext(ObDatum* datum, const ObString&s);
+    void add_bigint(ObDatum* datum, int64_t v);
+    void add_tinyint(ObDatum* datum, int8_t v);
+    void add_bigunsigned(ObDatum* datum, uint64_t v);
+    void add_null(ObDatum* datum);
+    void add_timestamp(ObDatum* datum, int64_t timestamp);
     size_t to_string(const char* buf, size_t size) const {return 0;}
 };
 

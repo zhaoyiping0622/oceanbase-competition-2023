@@ -570,7 +570,7 @@ void TableBatchCreateByPass::gen_all_column(ObTableSchema& table) {
   if(table.is_view_table()) return;
   if (!table.is_view_table() || table.view_column_filled()) {
     for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
-      ObColumnSchemaV2 column = **it;
+      ObColumnSchemaV2& column = **it;
       ZypAllColumnRow* row = ZYP_LOCAL_NEW(ZypAllColumnRow, "create_table");
       if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
         LOG_WARN("fail to gen_column_dml", KR(ret));
@@ -586,7 +586,7 @@ void TableBatchCreateByPass::gen_all_column_history(ObTableSchema& table) {
   auto table_id = table.get_table_id();
   if (!table.is_view_table() || table.view_column_filled()) {
     for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
-      ObColumnSchemaV2 column = **it;
+      ObColumnSchemaV2& column = **it;
       ZypAllColumnHistoryRow* row = ZYP_LOCAL_NEW(ZypAllColumnHistoryRow, "create_table");
       row->set_is_deleted(0);
       if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
