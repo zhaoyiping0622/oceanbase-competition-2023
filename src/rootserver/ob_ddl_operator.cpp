@@ -1470,6 +1470,16 @@ int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_sch
   ObSchemaService *schema_service = schema_service_.get_schema_service();
   const uint64_t tenant_id = table_schemas.at(0).get_tenant_id();
   int64_t new_schema_version = OB_INVALID_VERSION;
+  for(int i=0;i<table_schemas.count();i++) {
+    auto& table = table_schemas.at(i);
+    if(table.get_table_id() == OB_ALL_CORE_TABLE_TID) {
+      ObDDLSQLTransaction* client = (ObDDLSQLTransaction*)client_start();
+      create_table(table, *client);
+      table_schemas.remove(i);
+      client_end(client);
+      break;
+    }
+  }
   {
     OB_ZYP_TIME_COUNT;
     ObSchemaGetterGuard schema_guard;
