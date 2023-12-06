@@ -403,6 +403,8 @@ TableBatchCreateByPass::~TableBatchCreateByPass() {
 }
 
 void TableBatchCreateByPass::prepare_not_core() {
+  LOG_INFO("TableBatchCreateByPass prepare_not_core begin");
+  DEFER({LOG_INFO("TableBatchCreateByPass prepare_not_core end");});
   auto base_func = [&](int i) {
     auto& table = tables_.at(i);
     auto table_id = table.get_table_id();
@@ -420,6 +422,8 @@ void TableBatchCreateByPass::prepare_not_core() {
 }
 
 void TableBatchCreateByPass::prepare_core() {
+  LOG_INFO("TableBatchCreateByPass prepare_core begin");
+  DEFER({LOG_INFO("TableBatchCreateByPass prepare_core end");});
   ParallelRunner runner;
   runner.run_parallel_range(0, (int)tables_.count(), [&](int i) {
     auto& table = tables_.at(i);
@@ -436,20 +440,20 @@ int TableBatchCreateByPass::run() {
   DEFER({LOG_INFO("TableBatchCreateByPass run end");});
 
   std::vector<ZypInsertInfo*> insert_info={
-    OB_NEW(ZypInsertInfo, "insert_info", all_column_history_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_core_table_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_table_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_column_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_table_history_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_column_history_rows_),
     OB_NEW(ZypInsertInfo, "insert_info", all_ddl_operation_rows_),
   };
 
   std::vector<std::function<void()>> run_insert = {
-    [&](){ run_insert_all_column_history(); },
     [&](){ run_insert_all_core_table(); },
     [&](){ run_insert_all_table(); },
     [&](){ run_insert_all_column(); },
     [&](){ run_insert_all_table_history(); },
+    [&](){ run_insert_all_column_history(); },
     [&](){ run_insert_all_ddl_operation(); },
   };
 
@@ -479,12 +483,11 @@ int TableBatchCreateByPass::run() {
 
   ParallelRunner runner;
   runner.run_parallel([&]() {
-    int a = idx++;
-    while (a<run_insert.size() && insert_info[a]->count()) {
-      run(a);
+    for(int i=0;i<run_insert.size();i++) {
+      while(insert_info[i]->count()) {
+        run(i);
+      }
     }
-    a = find_max_idx();
-    if(a!=-1) run(a);
   }, [&]() { return find_max_idx() != -1; });
 
   return ret;
@@ -703,6 +706,8 @@ void TableBatchCreateByPass::run_insert_all_ddl_operation() {
 };
 
 void TableBatchCreateNormal::prepare() {
+  LOG_INFO("TableBatchCreateNormal prepare begin");
+  DEFER({LOG_INFO("TableBatchCreateNormal prepare end");});
   ParallelRunner runner;
   runner.run_parallel_range(0, (int)tables_.count(), [&](int i) {
     auto &table = tables_.at(i);
@@ -724,6 +729,8 @@ void TableBatchCreateNormal::prepare() {
   });
 }
 void TableBatchCreateNormal::run() {
+  LOG_INFO("TableBatchCreateNormal run begin");
+  DEFER({LOG_INFO("TableBatchCreateNormal run end");});
   ParallelRunner runner;
   runner.run_parallel([&](){
     void* sql;
