@@ -514,17 +514,17 @@ public:
 
   void gen_all_ddl_operation(share::schema::ObTableSchema& table);
 
-  void run_insert_all_core_table();
+  int run_insert_all_core_table();
 
-  void run_insert_all_table_history();
+  int run_insert_all_table_history();
 
-  void run_insert_all_table();
+  int run_insert_all_table();
 
-  void run_insert_all_column();
+  int run_insert_all_column();
 
-  void run_insert_all_column_history();
+  int run_insert_all_column_history();
 
-  void run_insert_all_ddl_operation();
+  int run_insert_all_ddl_operation();
 
 
 private:
