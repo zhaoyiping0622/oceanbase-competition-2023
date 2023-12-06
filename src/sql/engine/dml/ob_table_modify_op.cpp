@@ -1260,17 +1260,9 @@ int ObTableModifyOp::inner_get_next_row()
   ObArray<ZypRow*> rows;
   bool zyp_inited = false;
   if(!iter_end_ && zyp_enabled() && zyp_insert_info != nullptr) {
-    // TODO(zhaoyiping): 这里可以调参
-    const int batch_size = 4096;
-    rows = zyp_insert_info->get_row(batch_size);
     // FIXME(zhaoyiping): 这里少考虑了一种可能性：下面报错，然后有部分数据插不进去
-    if(rows.count() != 0) {
-      zyp_row_head = rows.get_data();
-      zyp_current_row = zyp_row_head;
-      zyp_row_tail = zyp_row_head + rows.count();
-    } else {
+    if(zyp_current_row == zyp_row_tail) {
       iter_end_ = true;
-      ret = OB_ITER_END;
     }
   }
   if (iter_end_) {

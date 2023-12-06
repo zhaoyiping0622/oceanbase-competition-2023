@@ -259,9 +259,6 @@ int gen_column_dml(
       LOG_TRACE("begin gen_column_dml", K(ret), K(compat_mode), K(orig_default_value), K(cur_default_value),  K(orig_default_value_len), K(cur_default_value_len));
     }
   }
-  if(strcmp(column.get_column_name(), "auto_increment") == 0 && column.get_table_id() == 3) {
-    LOG_INFO("zyp target", K(orig_default_value.ptr()==nullptr), K(orig_default_value), K(cur_default_value), K(cur_default_value.ptr()==nullptr));
-  }
   LOG_TRACE("begin gen_column_dml", K(ret), K(orig_default_value), K(cur_default_value), K(column));
   if (OB_SUCC(ret)) {
     ObString cur_default_value_v1;
@@ -473,7 +470,14 @@ int TableBatchCreateByPass::run() {
   auto run=[&](int idx) {
     zyp_enable();
     DEFER({zyp_disable();});
-    ::zyp_insert_info = insert_info[idx];
+    zyp_insert_info = insert_info[idx];
+    const int batch_size = 4096;
+    ObArray<ZypRow*> rows = zyp_insert_info->get_row(batch_size);
+    if(rows.count() != 0) {
+      zyp_row_head = rows.get_data();
+      zyp_current_row = zyp_row_head;
+      zyp_row_tail = zyp_row_head + rows.count();
+    } else return;
     LOG_INFO("::zyp_insert_info", K(::zyp_insert_info));
     run_insert[idx]();
     LOG_INFO("insert done", K(idx));
