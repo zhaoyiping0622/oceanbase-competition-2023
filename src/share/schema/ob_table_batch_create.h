@@ -320,7 +320,7 @@ static ObString ZypToString(const ObString& v) {
 }
 
 static ObString ZypCopyString(const ObString& v) {
-  auto nr = strlen(v.ptr());
+  auto nr = v.length();
   char* ret = (char*)ZypRow::allocator.alloc(nr+1);
   ret[nr]=0;
   memcpy(ret, v.ptr(), nr);
