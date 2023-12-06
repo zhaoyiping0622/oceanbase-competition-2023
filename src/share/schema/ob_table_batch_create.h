@@ -291,36 +291,40 @@ private:
 
 static ObString ZypToString(int8_t v) {
   char buf[32];
-  int nr = sprintf(buf, "%u", v)+1;
-  char* ret = (char*)ZypRow::allocator.alloc(nr);
+  int nr = sprintf(buf, "%u", v);
+  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  ret[nr]=0;
   memcpy(ret, buf, nr);
-  return ObString(ret);
+  return ObString(nr, ret);
 } 
 
 static ObString ZypToString(uint64_t v) {
   char buf[32];
-  int nr = sprintf(buf, "%lu", v)+1;
-  char* ret = (char*)ZypRow::allocator.alloc(nr);
+  int nr = sprintf(buf, "%lu", v);
+  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  ret[nr]=0;
   memcpy(ret, buf, nr);
-  return ObString(ret);
+  return ObString(nr, ret);
 } 
 
 static ObString ZypToString(int64_t v) {
   char buf[32];
-  int nr = sprintf(buf, "%ld", v)+1;
-  char* ret = (char*)ZypRow::allocator.alloc(nr);
+  int nr = sprintf(buf, "%ld", v);
+  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  ret[nr]=0;
   memcpy(ret, buf, nr);
-  return ObString(ret);
+  return ObString(nr, ret);
 } 
 static ObString ZypToString(const ObString& v) {
   return v;
 }
 
 static ObString ZypCopyString(const ObString& v) {
-  auto nr = strlen(v.ptr())+1;
-  char* ret = (char*)ZypRow::allocator.alloc(nr);
-  strcpy(ret, v.ptr());
-  return ObString(ret);
+  auto nr = strlen(v.ptr());
+  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  ret[nr]=0;
+  memcpy(ret, v.ptr(), nr);
+  return ObString(nr, ret);
 } 
 
 #define row_cnt(...) +1
@@ -394,17 +398,20 @@ static ObString ZypCopyString(const ObString& v) {
     table_rows(member_obj);\
     ObArray<ObObj> objs; \
     ObArray<ObDatum> datums; \
+    std::array<uint64_t, table_rows(row_cnt)> datum_buf; \
   public:\
     class_name() { \
       objs.prepare_allocate(get_cells_cnt()); \
       datums.prepare_allocate(get_cells_cnt()); \
       for(int i=0;i<datums.count();i++){ \
-        datums.at(i).ptr_ = (char*)ZypRow::allocator.alloc(8); \
+        datums.at(i).ptr_ = (char*)&datum_buf[i]; \
         assert(datums.at(i).ptr_!=nullptr); \
       }\
       int now=0;\
       table_rows(member_obj_point_init);\
     }     \
+    virtual ~class_name() { \
+    } \
     virtual void init_objs() { \
       table_rows(init_obj); \
     } \

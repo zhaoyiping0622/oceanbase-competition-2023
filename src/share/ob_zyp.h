@@ -20,6 +20,23 @@ void zyp_set_extra(const zyp_string&s);
 
 void zyp_unlimit_log(const char* buf, size_t size);
 
+class ConcurrentPageArena {
+public:
+  // using SpinRWLock;
+  void* alloc(size_t size) {
+    oceanbase::common::SpinWLockGuard guard(lock_);
+    return alloc_.alloc(size);
+  }
+  void free() {
+    oceanbase::common::SpinWLockGuard guard(lock_);
+    return alloc_.free();
+  }
+private:
+  oceanbase::common::PageArena<> alloc_;
+  oceanbase::common::SpinRWLock lock_;
+};
+
+
 namespace oceanbase {
 namespace common {
   class ObDatum;
@@ -50,7 +67,7 @@ class ZypRow {
     void add_null(ObObj* obj, ObDatum* datum);
     void add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp);
     size_t to_string(const char* buf, size_t size) const {return 0;}
-    static oceanbase::common::ObSafeArena allocator;
+    static ConcurrentPageArena allocator;
 };
 
 class ZypInsertInfo {

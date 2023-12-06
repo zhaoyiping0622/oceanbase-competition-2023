@@ -35,7 +35,7 @@ thread_local bool zyp_inited = false;
 
 using namespace oceanbase::common;
 
-oceanbase::common::ObSafeArena ZypRow::allocator("zyp_row");
+ConcurrentPageArena ZypRow::allocator;
 
 void ZypRow::add_varchar(ObObj* obj, ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {
