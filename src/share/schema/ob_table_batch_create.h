@@ -377,12 +377,12 @@ static ObString ZypCopyString(const ObString& v) {
 
 #define member_datum(a,b,...) \
   private: \
-    ObDatum *member_datum_name(a);\
+    ObDatum member_datum_name(a);\
     void init_datum_name(a)() { \
       if(member_is_null_name(a)) { \
-        add_null(member_datum_name(a)); \
+        add_null(&member_datum_name(a)); \
       } else { \
-        add_##b(member_datum_name(a), member_name(a)); \
+        add_##b(&member_datum_name(a), member_name(a)); \
       } \
     }
 
@@ -401,23 +401,23 @@ static ObString ZypCopyString(const ObString& v) {
   class class_name : public ZypRow, public null_class_name(class_name) { \
     static const char* _table_name_; \
     table_rows(member);\
+    ObDatum datum_begin_; \
     table_rows(member_datum);\
     std::array<uint64_t, table_rows(row_cnt)> datum_buf; \
-    std::array<ObDatum, table_rows(row_cnt)> datums; \
+    ObDatum* datums; \
   public:\
     OB_INLINE class_name() { \
+      datums = (&datum_begin_)+1; \
       for(int i=0;i<cells_cnt;i++){ \
         datums[i].ptr_ = (char*)&datum_buf[i]; \
       }\
-      int now=0;\
-      table_rows(member_datum_point_init);\
     } \
     virtual ~class_name() { \
     } \
     virtual void init_datums() { \
       table_rows(init_datum); \
     } \
-    virtual ObDatum* get_datums() { return datums.data(); } \
+    virtual ObDatum* get_datums() { return datums; } \
     static const int cells_cnt = table_rows(row_cnt); \
     virtual size_t get_cells_cnt() const { return cells_cnt; }\
     template<typename T>\

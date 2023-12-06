@@ -445,13 +445,13 @@ int TableBatchCreateByPass::run() {
     OB_NEW(ZypInsertInfo, "insert_info", all_column_history_rows_),
   };
 
-  std::vector<std::function<void()>> run_insert = {
-    [&](){ run_insert_all_core_table(); },
-    [&](){ run_insert_all_table(); },
-    [&](){ run_insert_all_column(); },
-    [&](){ run_insert_all_ddl_operation(); },
-    [&](){ run_insert_all_table_history(); },
-    [&](){ run_insert_all_column_history(); },
+  std::vector<std::function<int()>> run_insert = {
+    [&](){ return run_insert_all_core_table(); },
+    [&](){ return run_insert_all_table(); },
+    [&](){ return run_insert_all_column(); },
+    [&](){ return run_insert_all_ddl_operation(); },
+    [&](){ return run_insert_all_table_history(); },
+    [&](){ return run_insert_all_column_history(); },
   };
 
   DEFER({for(auto x:insert_info)OB_DELETE(ZypInsertInfo, "insert_info", x);});
@@ -468,19 +468,27 @@ int TableBatchCreateByPass::run() {
   };
 
   auto run=[&](int idx) {
+    int ret = OB_SUCCESS;
     zyp_enable();
     DEFER({zyp_disable();});
     zyp_insert_info = insert_info[idx];
     const int batch_size = 4096;
     ObArray<ZypRow*> rows = zyp_insert_info->get_row(batch_size);
-    if(rows.count() != 0) {
+    if(rows.count() == 0) return;
+    LOG_INFO("::zyp_insert_info", K(::zyp_insert_info));
+    for(int i=0;i<3;i++) {
       zyp_row_head = rows.get_data();
       zyp_current_row = zyp_row_head;
       zyp_row_tail = zyp_row_head + rows.count();
-    } else return;
-    LOG_INFO("::zyp_insert_info", K(::zyp_insert_info));
-    run_insert[idx]();
-    LOG_INFO("insert done", K(idx));
+      if(OB_FAIL(run_insert[idx]())) {
+        LOG_INFO("insert failed sleep", K(ret), K(idx), K(i));
+        usleep(100);
+      } else {
+        LOG_INFO("insert done", K(idx));
+        return;
+      }
+    }
+    LOG_INFO("insert failed", K(ret), K(idx));
   };
     
   std::atomic_int idx{0};
@@ -632,7 +640,7 @@ void TableBatchCreateByPass::gen_all_ddl_operation(ObTableSchema& table) {
   all_ddl_operation_rows_.push(row);
 }
 
-void TableBatchCreateByPass::run_insert_all_core_table() { 
+int TableBatchCreateByPass::run_insert_all_core_table() { 
   auto* sql_client = client_start_();
   DEFER({client_end_(sql_client);});
   int ret = OB_SUCCESS;
@@ -643,9 +651,10 @@ void TableBatchCreateByPass::run_insert_all_core_table() {
   } else {
       LOG_INFO("run_insert_all_core_table succeeded", K(affected_rows));
   }
+  return ret;
 }
 
-void TableBatchCreateByPass::run_insert_all_table_history() { 
+int TableBatchCreateByPass::run_insert_all_table_history() { 
   auto* sql_client = client_start_();
   DEFER({client_end_(sql_client);});
   int ret = OB_SUCCESS;
@@ -656,9 +665,10 @@ void TableBatchCreateByPass::run_insert_all_table_history() {
   } else {
       LOG_INFO("run_insert_all_table_history succeeded", K(affected_rows));
   }
+  return ret;
 }
 
-void TableBatchCreateByPass::run_insert_all_table() { 
+int TableBatchCreateByPass::run_insert_all_table() { 
   auto* sql_client = client_start_();
   DEFER({client_end_(sql_client);});
   int ret = OB_SUCCESS;
@@ -669,9 +679,10 @@ void TableBatchCreateByPass::run_insert_all_table() {
   } else {
       LOG_INFO("run_insert_all_table succeeded", K(affected_rows));
   }
+  return ret;
 }
 
-void TableBatchCreateByPass::run_insert_all_column() { 
+int TableBatchCreateByPass::run_insert_all_column() { 
   auto* sql_client = client_start_();
   DEFER({client_end_(sql_client);});
   int ret = OB_SUCCESS;
@@ -682,9 +693,10 @@ void TableBatchCreateByPass::run_insert_all_column() {
   } else {
       LOG_INFO("run_insert_all_column succeeded", K(affected_rows));
   }
+  return ret;
 }
 
-void TableBatchCreateByPass::run_insert_all_column_history() { 
+int TableBatchCreateByPass::run_insert_all_column_history() { 
   auto* sql_client = client_start_();
   DEFER({client_end_(sql_client);});
   int ret = OB_SUCCESS;
@@ -695,8 +707,9 @@ void TableBatchCreateByPass::run_insert_all_column_history() {
   } else {
       LOG_INFO("run_insert_all_column_history succeeded", K(affected_rows));
   }
+  return ret;
 }
-void TableBatchCreateByPass::run_insert_all_ddl_operation() { 
+int TableBatchCreateByPass::run_insert_all_ddl_operation() { 
   auto* sql_client = client_start_();
   DEFER({client_end_(sql_client);});
   int ret = OB_SUCCESS;
@@ -707,6 +720,7 @@ void TableBatchCreateByPass::run_insert_all_ddl_operation() {
   } else {
       LOG_INFO("run_insert_all_ddl_operation succeeded", K(affected_rows));
   }
+  return ret;
 };
 
 void TableBatchCreateNormal::prepare() {

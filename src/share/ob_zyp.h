@@ -67,14 +67,14 @@ class ZypRow {
     virtual size_t get_cells_cnt() const = 0;
     virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long &row_id) = 0;
     virtual ~ZypRow() {}
-    void add_varchar(ObDatum* datum, const ObString&s);
-    void add_varbinary(ObDatum* datum, const ObString&s);
-    void add_longtext(ObDatum* datum, const ObString&s);
-    void add_bigint(ObDatum* datum, int64_t v);
-    void add_tinyint(ObDatum* datum, int8_t v);
-    void add_bigunsigned(ObDatum* datum, uint64_t v);
-    void add_null(ObDatum* datum);
-    void add_timestamp(ObDatum* datum, int64_t timestamp);
+    static void add_varchar(ObDatum* datum, const ObString&s);
+    static void add_varbinary(ObDatum* datum, const ObString&s);
+    static void add_longtext(ObDatum* datum, const ObString&s);
+    static void add_bigint(ObDatum* datum, int64_t v);
+    static void add_tinyint(ObDatum* datum, int8_t v);
+    static void add_bigunsigned(ObDatum* datum, uint64_t v);
+    static void add_null(ObDatum* datum);
+    static void add_timestamp(ObDatum* datum, int64_t timestamp);
     size_t to_string(const char* buf, size_t size) const {return 0;}
 };
 
