@@ -396,7 +396,7 @@ static ObString ZypCopyString(const ObString& v) {
 #define TABLE_CLASS_DECLARE(class_name, table_name, table_rows) \
   struct null_class_name(class_name) { \
     table_rows(member_null);\
-    null_class_name(class_name)() { memset(this, 0xff, sizeof(*this)); }\
+    OB_INLINE null_class_name(class_name)() { memset(this, 0xff, sizeof(*this)); }\
   }; \
   class class_name : public ZypRow, public null_class_name(class_name) { \
     static const char* _table_name_; \
@@ -405,13 +405,13 @@ static ObString ZypCopyString(const ObString& v) {
     std::array<uint64_t, table_rows(row_cnt)> datum_buf; \
     std::array<ObDatum, table_rows(row_cnt)> datums; \
   public:\
-    class_name() { \
+    OB_INLINE class_name() { \
       for(int i=0;i<cells_cnt;i++){ \
         datums[i].ptr_ = (char*)&datum_buf[i]; \
       }\
       int now=0;\
       table_rows(member_datum_point_init);\
-    }     \
+    } \
     virtual ~class_name() { \
     } \
     virtual void init_datums() { \
@@ -421,11 +421,11 @@ static ObString ZypCopyString(const ObString& v) {
     static const int cells_cnt = table_rows(row_cnt); \
     virtual size_t get_cells_cnt() const { return cells_cnt; }\
     template<typename T>\
-    bool need_set_null(const T&) { return false; }\
-    bool need_set_null(const ObString&t) { return t.ptr() == nullptr; }\
+    static bool need_set_null(const T&) { return false; }\
+    static bool need_set_null(const ObString&t) { return t.ptr() == nullptr; }\
     template<typename T> \
-    T copy(const T&t) { return t; }  \
-    ObString copy(const ObString&t) { return ZypCopyString(t); } \
+    static T copy(const T&t) { return t; }  \
+    static ObString copy(const ObString&t) { return ZypCopyString(t); } \
     virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long& row_id) {\
       auto now = ObTimeUtility::fast_current_time();\
       int64_t row = row_id++;\

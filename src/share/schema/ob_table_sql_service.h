@@ -42,6 +42,12 @@ public:
                            std::function<ObISQLClient*()> client_start,
                            std::function<void(ObISQLClient*)> client_end);
 
+  int create_table_zyp(ObTableSchema &table,
+                           common::ObISQLClient &sql_client,
+                           const common::ObString *ddl_stmt_str = NULL,
+                           const bool need_sync_schema_version = true,
+                           const bool is_truncate_table = false);
+
   virtual int create_table(ObTableSchema &table,
                            common::ObISQLClient &sql_client,
                            const common::ObString *ddl_stmt_str = NULL,
@@ -215,6 +221,12 @@ public:
       ObTableSchema &schema,
       uint64_t new_schema_version);
 
+  int update_data_table_schema_version_zyp(common::ObISQLClient &sql_client,
+                                       const uint64_t tenant_id,
+                                       const uint64_t data_table_id,
+                                       const bool in_offline_ddl_white_list,
+                                       int64_t new_schema_version = common::OB_INVALID_VERSION);
+
   int update_data_table_schema_version(common::ObISQLClient &sql_client,
                                        const uint64_t tenant_id,
                                        const uint64_t data_table_id,
@@ -261,6 +273,10 @@ public:
   int gen_column_dml(const uint64_t exec_tenant_id, const ObColumnSchemaV2 &column, share::ObDMLSqlSplicer &dml);
 
 private:
+
+  int add_table_zyp(common::ObISQLClient &sql_client, const ObTableSchema &table,
+                const bool update_object_status_ignore_version,
+                const bool only_history = false);
 
   int add_table(common::ObISQLClient &sql_client, const ObTableSchema &table,
                 const bool update_object_status_ignore_version,
