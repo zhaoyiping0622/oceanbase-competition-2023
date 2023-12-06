@@ -437,12 +437,12 @@ int TableBatchCreateByPass::run() {
   DEFER({LOG_INFO("TableBatchCreateByPass run end");});
 
   std::vector<ZypInsertInfo*> insert_info={
-    ZYP_NEW(ZypInsertInfo, "insert_info", all_core_table_rows_),
-    ZYP_NEW(ZypInsertInfo, "insert_info", all_table_rows_),
-    ZYP_NEW(ZypInsertInfo, "insert_info", all_column_rows_),
-    ZYP_NEW(ZypInsertInfo, "insert_info", all_ddl_operation_rows_),
-    ZYP_NEW(ZypInsertInfo, "insert_info", all_table_history_rows_),
-    ZYP_NEW(ZypInsertInfo, "insert_info", all_column_history_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_core_table_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_table_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_column_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_ddl_operation_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_table_history_rows_),
+    OB_NEW(ZypInsertInfo, "insert_info", all_column_history_rows_),
   };
 
   std::vector<std::function<void()>> run_insert = {
@@ -454,7 +454,7 @@ int TableBatchCreateByPass::run() {
     [&](){ run_insert_all_column_history(); },
   };
 
-  DEFER({for(auto x:insert_info)ZYP_DELETE(ZypInsertInfo, "insert_info", x);});
+  DEFER({for(auto x:insert_info)OB_DELETE(ZypInsertInfo, "insert_info", x);});
 
   auto find_max_idx=[&]() {
     int ret = -1;
@@ -527,21 +527,21 @@ void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table) {
   auto table_id = table.get_table_id();
   int ret = OB_SUCCESS;
   if(is_core_table(table_id)) {
-    ZypAllTableRow* row = ZYP_NEW(ZypAllTableRow, "create_table");
+    ZypAllTableRow* row = ZYP_LOCAL_NEW(ZypAllTableRow, "create_table");
     oceanbase::gen_table_dml(exec_tenant_id_, table, false, *row);
     auto tmp = row->gen_core_rows(get_core_all_table_idx());
     for(int i=0;i<tmp.count();i++)all_core_table_rows_.push(tmp.at(i));
-    ZYP_DELETE(ZypAllTableRow, "create_table", row);
+    ZYP_LOCAL_DELETE(ZypAllTableRow, "create_table", row);
     if (!table.is_view_table() || table.view_column_filled()) {
       for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
         ObColumnSchemaV2 column = **it;
-        ZypAllColumnRow* row = ZYP_NEW(ZypAllColumnRow, "create_table");
+        ZypAllColumnRow* row = ZYP_LOCAL_NEW(ZypAllColumnRow, "create_table");
         if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
           LOG_WARN("fail to gen_column_dml", KR(ret));
         } else {
           auto tmp=row->gen_core_rows(get_core_all_column_idx());
           for(int i=0;i<tmp.count();i++)all_core_table_rows_.push(tmp.at(i));
-          ZYP_DELETE(ZypAllColumnRow, "create_table", row);
+          ZYP_LOCAL_DELETE(ZypAllColumnRow, "create_table", row);
         }
       }
     }
@@ -550,7 +550,7 @@ void TableBatchCreateByPass::gen_all_core_table(ObTableSchema& table) {
 
 void TableBatchCreateByPass::gen_all_table(ObTableSchema& table) {
   if(!is_core_table(table.get_table_id())&&!table.is_view_table()) {
-    ZypAllTableRow* row = ZYP_NEW(ZypAllTableRow, "create_table");
+    ZypAllTableRow* row = ZYP_LOCAL_NEW(ZypAllTableRow, "create_table");
     oceanbase::gen_table_dml(exec_tenant_id_, table, false, *row);
     all_table_rows_.push(row);
   }
@@ -558,7 +558,7 @@ void TableBatchCreateByPass::gen_all_table(ObTableSchema& table) {
 
 void TableBatchCreateByPass::gen_all_table_history(ObTableSchema& table) {
   if(table.is_view_table()) return;
-  ZypAllTableHistoryRow* row = ZYP_NEW(ZypAllTableHistoryRow, "create_table");
+  ZypAllTableHistoryRow* row = ZYP_LOCAL_NEW(ZypAllTableHistoryRow, "create_table");
   oceanbase::gen_table_dml(exec_tenant_id_, table, false, *row);
   row->set_is_deleted(0);
   all_table_history_rows_.push(row);
@@ -571,7 +571,7 @@ void TableBatchCreateByPass::gen_all_column(ObTableSchema& table) {
   if (!table.is_view_table() || table.view_column_filled()) {
     for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
       ObColumnSchemaV2 column = **it;
-      ZypAllColumnRow* row = ZYP_NEW(ZypAllColumnRow, "create_table");
+      ZypAllColumnRow* row = ZYP_LOCAL_NEW(ZypAllColumnRow, "create_table");
       if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
         LOG_WARN("fail to gen_column_dml", KR(ret));
       } else {
@@ -587,7 +587,7 @@ void TableBatchCreateByPass::gen_all_column_history(ObTableSchema& table) {
   if (!table.is_view_table() || table.view_column_filled()) {
     for(auto it = table.column_begin();OB_SUCC(ret)&&it!=table.column_end();it++) {
       ObColumnSchemaV2 column = **it;
-      ZypAllColumnHistoryRow* row = ZYP_NEW(ZypAllColumnHistoryRow, "create_table");
+      ZypAllColumnHistoryRow* row = ZYP_LOCAL_NEW(ZypAllColumnHistoryRow, "create_table");
       row->set_is_deleted(0);
       if(OB_FAIL(oceanbase::gen_column_dml(exec_tenant_id_, column, *row))) {
         LOG_WARN("fail to gen_column_dml", KR(ret));
@@ -601,7 +601,7 @@ void TableBatchCreateByPass::gen_all_column_history(ObTableSchema& table) {
 void TableBatchCreateByPass::gen_all_ddl_operation(ObTableSchema& table) {
   int ret = OB_SUCCESS;
   auto table_id = table.get_table_id();
-  ZypAllDDLOperationRow* row = ZYP_NEW(ZypAllDDLOperationRow, "create_table");
+  ZypAllDDLOperationRow* row = ZYP_LOCAL_NEW(ZypAllDDLOperationRow, "create_table");
   ObSchemaOperation opt;
   opt.tenant_id_ = tenant_id_;
   opt.database_id_ = table.get_database_id();

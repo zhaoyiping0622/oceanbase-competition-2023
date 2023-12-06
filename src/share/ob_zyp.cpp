@@ -5,6 +5,8 @@
 
 __thread bool zyp_come = false;
 zyp_string zyp_extra_info;
+thread_local ZypAllocator* local_allocator = nullptr;
+oceanbase::LightyQueue local_allocator_gc_;
 
 void zyp_enable() { zyp_come=true; zyp_inited=false; }
 void zyp_disable() { zyp_come=false; zyp_inited=false; }
@@ -34,8 +36,6 @@ thread_local ZypRow** zyp_row_tail = nullptr;
 thread_local bool zyp_inited = false;
 
 using namespace oceanbase::common;
-
-ConcurrentPageArena ZypRow::allocator;
 
 void ZypRow::add_varchar(ObObj* obj, ObDatum* datum, const ObString&s) {
   if(s.ptr() == NULL) {

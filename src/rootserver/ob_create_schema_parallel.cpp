@@ -9,6 +9,7 @@
 #include "lib/thread/thread_mgr.h"
 #include "lib/utility/ob_macro_utils.h"
 #include "share/ob_thread_mgr.h"
+#include "share/ob_zyp.h"
 
 #define USING_LOG_PREFIX BOOTSTRAP
 
@@ -52,6 +53,9 @@ void OBCreateSchemaParallel::run1() {
   }
   DEFER({--cnt_;});
   lib::set_thread_name("OBCreateSchemaParallel");
+  local_allocator = OB_NEW(ZypAllocator, "zyp_allocator");
+  LOG_INFO("local_allocator init");
+  DEFER({ local_allocator_gc_.push(local_allocator); });
   func_();
 }
 

@@ -12,8 +12,11 @@ using zyp_string = oceanbase::common::ObString;
 extern zyp_string zyp_extra_info;
 
 #define ZYP_LOG_INFO(...) if(zyp_come) LOG_INFO(__VA_ARGS__)
-#define ZYP_NEW(type,label,...) new type(__VA_ARGS__) // OB_NEW(type,label,__VA_ARGS__)
-#define ZYP_DELETE(type,label,ptr,...) delete ((type*)(ptr)) // OB_DELETE(type,label,point,__VA_ARGS__)
+
+#define ZYP_LOCAL_ALLOC(type, size) (type*)local_allocator->alloc(size) // OB_NEW(type,label,__VA_ARGS__)
+#define ZYP_LOCAL_FREE(p) // OB_NEW(type,label,__VA_ARGS__)
+#define ZYP_LOCAL_NEW(type,label,...) local_allocator->alloc<type>(__VA_ARGS__) // OB_NEW(type,label,__VA_ARGS__)
+#define ZYP_LOCAL_DELETE(type,label,ptr) local_allocator->free<type>(ptr) // OB_DELETE(type,label,point,__VA_ARGS__)
 
 void zyp_enable();
 bool zyp_enabled();
@@ -62,8 +65,8 @@ class ZypRow {
     using ObArray = oceanbase::common::ObArray<T>;
     using ObString = oceanbase::common::ObString;
     virtual void init_objs() = 0;
-    virtual ObObj* get_cells() const = 0;
-    virtual ObDatum* get_datums() const = 0;
+    virtual ObObj* get_cells() = 0;
+    virtual ObDatum* get_datums() = 0;
     virtual size_t get_cells_cnt() const = 0;
     oceanbase::common::ObNewRow new_row();
     virtual ObArray<ZypRow*> gen_core_rows(std::atomic_long &row_id) = 0;
@@ -77,7 +80,6 @@ class ZypRow {
     void add_null(ObObj* obj, ObDatum* datum);
     void add_timestamp(ObObj* obj, ObDatum* datum, int64_t timestamp);
     size_t to_string(const char* buf, size_t size) const {return 0;}
-    static ConcurrentPageArena allocator;
 };
 
 class ZypInsertInfo {
@@ -92,8 +94,38 @@ private:
   LightyQueue& queue_;
 };
 
+class ZypAllocator {
+public:
+  template<typename T, typename ...Args>
+  void alloc(T*& p, Args&& ...args) {
+    p = (T*) alloc(sizeof(T));
+    new (p) T(std::forward<Args>(args)...);
+  }
+  template<typename T, typename ...Args>
+  T* alloc(Args&& ...args) {
+    auto* p = (T*) alloc(sizeof(T));
+    new (p) T(std::forward<Args>(args)...);
+    return p;
+  }
+  template<typename T>
+  void free(T* t) {
+    t->~T();
+  }
+  // using SpinRWLock;
+  void* alloc(size_t size) {
+    return alloc_.alloc(size);
+  }
+  void free() {
+    return alloc_.free();
+  }
+private:
+  oceanbase::common::PageArena<> alloc_;
+};
+
 extern thread_local ZypInsertInfo* zyp_insert_info;
 extern thread_local ZypRow** zyp_row_head;
 extern thread_local ZypRow** zyp_row_tail;
 extern thread_local ZypRow** zyp_current_row;
 extern thread_local bool zyp_inited;
+extern thread_local ZypAllocator* local_allocator;
+extern oceanbase::LightyQueue local_allocator_gc_;

@@ -2365,7 +2365,15 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
                            std::function<void(ObISQLClient*)> client_end) {
   LOG_INFO("create_table_batch begin");
   DEFER({LOG_INFO("create_table_batch end");});
-  DEFER({ZypRow::allocator.free();});
+  local_allocator_gc_.init(10000);
+  DEFER({ 
+    ZypAllocator *p;
+    int ret = OB_SUCCESS;
+    while(OB_SUCC(local_allocator_gc_.pop(*(void**)&p))) {
+      ((ZypAllocator*)p)->free();
+      OB_DELETE(ZypAllocator, "zyp_allocator", p);
+    }
+  });
   int ret = OB_SUCCESS;
   auto* trace_id = ObCurTraceId::get_trace_id();
   auto set_trace_id = [&]() {if(trace_id) ObCurTraceId::set(*trace_id);};

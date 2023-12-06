@@ -292,7 +292,7 @@ private:
 static ObString ZypToString(int8_t v) {
   char buf[32];
   int nr = sprintf(buf, "%u", v);
-  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  char* ret = ZYP_LOCAL_ALLOC(char, nr+1);
   ret[nr]=0;
   memcpy(ret, buf, nr);
   return ObString(nr, ret);
@@ -301,7 +301,7 @@ static ObString ZypToString(int8_t v) {
 static ObString ZypToString(uint64_t v) {
   char buf[32];
   int nr = sprintf(buf, "%lu", v);
-  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  char* ret = ZYP_LOCAL_ALLOC(char, nr+1);
   ret[nr]=0;
   memcpy(ret, buf, nr);
   return ObString(nr, ret);
@@ -310,7 +310,7 @@ static ObString ZypToString(uint64_t v) {
 static ObString ZypToString(int64_t v) {
   char buf[32];
   int nr = sprintf(buf, "%ld", v);
-  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  char* ret = ZYP_LOCAL_ALLOC(char, nr+1);
   ret[nr]=0;
   memcpy(ret, buf, nr);
   return ObString(nr, ret);
@@ -321,7 +321,7 @@ static ObString ZypToString(const ObString& v) {
 
 static ObString ZypCopyString(const ObString& v) {
   auto nr = v.length();
-  char* ret = (char*)ZypRow::allocator.alloc(nr+1);
+  char* ret = ZYP_LOCAL_ALLOC(char, nr+1);
   ret[nr]=0;
   memcpy(ret, v.ptr(), nr);
   return ObString(nr, ret);
@@ -340,7 +340,7 @@ static ObString ZypCopyString(const ObString& v) {
 #define init_obj_name(a) init_obj_##a
 
 #define to_core_row(x,y,...) \
-  tmp=ZYP_NEW(ZypAllCoreTableRow, "core_row");\
+  tmp=ZYP_LOCAL_NEW(ZypAllCoreTableRow, "core_row");\
   tmp->set_gmt_create(now);\
   tmp->set_gmt_modified(now);\
   tmp->set_table_name(_table_name_);\
@@ -396,16 +396,14 @@ static ObString ZypCopyString(const ObString& v) {
     static const char* _table_name_; \
     table_rows(member);\
     table_rows(member_obj);\
-    ObArray<ObObj> objs; \
-    ObArray<ObDatum> datums; \
     std::array<uint64_t, table_rows(row_cnt)> datum_buf; \
+    std::array<ObObj, table_rows(row_cnt)> objs; \
+    std::array<ObDatum, table_rows(row_cnt)> datums; \
   public:\
     class_name() { \
-      objs.prepare_allocate(get_cells_cnt()); \
-      datums.prepare_allocate(get_cells_cnt()); \
-      for(int i=0;i<datums.count();i++){ \
-        datums.at(i).ptr_ = (char*)&datum_buf[i]; \
-        assert(datums.at(i).ptr_!=nullptr); \
+      for(int i=0;i<cells_cnt;i++){ \
+        datums[i].ptr_ = (char*)&datum_buf[i]; \
+        assert(datums[i].ptr_!=nullptr); \
       }\
       int now=0;\
       table_rows(member_obj_point_init);\
@@ -415,9 +413,10 @@ static ObString ZypCopyString(const ObString& v) {
     virtual void init_objs() { \
       table_rows(init_obj); \
     } \
-    virtual ObDatum* get_datums() const { return datums.get_data(); } \
-    virtual ObObj* get_cells() const { return objs.get_data(); }\
-    virtual size_t get_cells_cnt() const { return table_rows(row_cnt); }\
+    virtual ObDatum* get_datums() { return datums.data(); } \
+    virtual ObObj* get_cells() { return objs.data(); }\
+    static const int cells_cnt = table_rows(row_cnt); \
+    virtual size_t get_cells_cnt() const { return cells_cnt; }\
     template<typename T>\
     bool need_set_null(const T&) { return false; }\
     bool need_set_null(const ObString&t) { return t.ptr() == nullptr; }\
