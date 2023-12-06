@@ -2363,6 +2363,9 @@ int ObTableSqlService::delete_single_column(
 int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &tables,
                            std::function<ObISQLClient*()> client_start,
                            std::function<void(ObISQLClient*)> client_end) {
+  LOG_INFO("create_table_batch begin");
+  DEFER({LOG_INFO("create_table_batch end");});
+  DEFER({ZypRow::allocator.free();});
   int ret = OB_SUCCESS;
   auto* trace_id = ObCurTraceId::get_trace_id();
   auto set_trace_id = [&]() {if(trace_id) ObCurTraceId::set(*trace_id);};
@@ -2403,8 +2406,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   });
   int64_t last_schema_version = 0;
   for(int i=0;i<tables.count();i++) {
-    if(is_core_table(tables.at(i).get_table_id()))
+    if(is_core_table(tables.at(i).get_table_id())) {
       last_schema_version = max(last_schema_version, tables.at(i).get_schema_version());
+    }
   }
   auto* client = client_start();
   log_core_operation(*client, tables.at(0).get_tenant_id(), last_schema_version);

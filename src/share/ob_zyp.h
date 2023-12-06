@@ -24,8 +24,11 @@ class ConcurrentPageArena {
 public:
   // using SpinRWLock;
   void* alloc(size_t size) {
-    oceanbase::common::SpinWLockGuard guard(lock_);
-    return alloc_.alloc(size);
+    lock_.wrlock();
+    auto* ret = alloc_.alloc(size);
+    lock_.wrunlock();
+    // memset(ret, 0, size);
+    return ret;
   }
   void free() {
     oceanbase::common::SpinWLockGuard guard(lock_);
