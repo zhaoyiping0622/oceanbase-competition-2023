@@ -64,7 +64,7 @@ const char* LIBC_NAME="libc.so.6";
 unsigned int (*glibc_sleep)(unsigned int);
 unsigned int (*glibc_usleep)(useconds_t);
 int (*glibc_nanosleep)(const struct timespec *req, struct timespec *rem);
-const int div_times = 128;
+const int div_times = 64;
 __attribute__((constructor)) void hook_init() {
   libc_hdl = dlopen(LIBC_NAME, RTLD_LAZY | RTLD_NOLOAD);
   *(void**)&glibc_sleep = dlsym(libc_hdl, "sleep");;
