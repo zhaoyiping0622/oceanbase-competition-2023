@@ -118,6 +118,8 @@
 #include "storage/tx_storage/ob_ls_service.h"
 #include "storage/tablelock/ob_lock_inner_connection_util.h"
 
+#include <set>
+
 
 namespace oceanbase
 {
@@ -23203,12 +23205,120 @@ int ObDDLService::set_log_restore_source(
   return ret;
 }
 
-int ObDDLService::create_sys_table_schemas(
-    ObDDLOperator &ddl_operator,
-    ObMySQLTransaction &trans,
-    common::ObIArray<ObTableSchema> &tables)
-{
-  LOG_INFO("create_sys_table_schemas begin");
+bool ObDDLService::check_key_schema(const ObTableSchema& table) {
+  static std::set<std::string> key_schemas = {
+    "__all_acquired_snapshot",
+    "__all_backup_delete_job",
+    "__all_backup_job",
+    "__all_balance_group_ls_stat",
+    "__all_balance_job",
+    "__all_balance_task",
+    "__all_charset",
+    "__all_cluster_event_history",
+    "__all_collation",
+    "__all_column",
+    "__all_column_history",
+    "__all_constraint_history",
+    "__all_context_history",
+    "__all_core_table",
+    "__all_database",
+    "__all_database_history",
+    "__all_database_privilege",
+    "__all_database_privilege_history",
+    "__all_dblink_history",
+    "__all_ddl_operation",
+    "__all_ddl_operation)",
+    "__all_ddl_task_status",
+    "__all_disk_io_calibration",
+    "__all_foreign_key_history",
+    "__all_freeze_info",
+    "__all_func_history",
+    "__all_log_archive_dest_parameter",
+    "__all_log_archive_progress",
+    "__all_log_restore_source",
+    "__all_ls",
+    "__all_ls_election_reference_info",
+    "__all_ls_meta_table",
+    "__all_ls_recovery_stat",
+    "__all_ls_replica_task",
+    "__all_ls_status",
+    "__all_merge_info",
+    "__all_mock_fk_parent_table_history",
+    "__all_optstat_global_prefs(sname,",
+    "__all_outline_history",
+    "__all_package_history",
+    "__all_privilege",
+    "__all_recover_table_job",
+    "__all_res_mgr_consumer_group",
+    "__all_res_mgr_mapping_rule",
+    "__all_res_mgr_plan",
+    "__all_resource_pool",
+    "__all_restore_job",
+    "__all_rls_context_history",
+    "__all_rls_group_history",
+    "__all_rls_policy_history",
+    "__all_rootservice_event_history",
+    "__all_rootservice_job",
+    "__all_routine_history",
+    "__all_seed_parameter",
+    "__all_sequence_object_history",
+    "__all_server",
+    "__all_server_event_history",
+    "__all_service_epoch",
+    "__all_spatial_reference_systems",
+    "__all_spm_config",
+    "__all_synonym_history",
+    "__all_sys_parameter",
+    "__all_sys_stat",
+    "__all_sys_variable",
+    "__all_sys_variable_history",
+    "__all_table",
+    "__all_tablegroup",
+    "__all_tablegroup_history",
+    "__all_table_history",
+    "__all_table_privilege_history",
+    "__all_table_stat",
+    "__all_tablet_meta_table",
+    "__all_tablet_replica_checksum",
+    "__all_tablet_to_ls",
+    "__all_tenant",
+    "__all_tenant_directory_history",
+    "__all_tenant_history",
+    "__all_tenant_info",
+    "__all_tenant_keystore",
+    "__all_tenant_keystore_history",
+    "__all_tenant_objauth_history",
+    "__all_tenant_ols_component_history",
+    "__all_tenant_ols_label_history",
+    "__all_tenant_ols_policy_history",
+    "__all_tenant_ols_user_level_history",
+    "__all_tenant_profile_history",
+    "__all_tenant_scheduler_job",
+    "__all_tenant_scheduler_job(",
+    "__all_tenant_security_audit_history",
+    "__all_tenant_sysauth_history",
+    "__all_tenant_tablespace_history",
+    "__all_tenant_trigger_history",
+    "__all_transfer_task",
+    "__all_transfer_task_history",
+    "__all_type_history",
+    "__all_unit",
+    "__all_unit_config",
+    "__all_user",
+    "__all_user_history",
+    "__all_virtual_ls_meta_table",
+    "__all_virtual_tenant_parameter_stat",
+    "__all_virtual_unit",
+    "__all_weak_read_service",
+    "__all_zone",
+    "__all_zone_merge_info",
+    "__tenant_parameter",
+  };
+  return key_schemas.count(table.get_table_name());
+}
+
+int ObDDLService::create_table_batch(ObDDLOperator &ddl_operator, common::ObIArray<ObTableSchema>& tables) {
+  LOG_INFO("create_table_batch begin");
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("variable is not init", KR(ret));
@@ -23235,6 +23345,18 @@ int ObDDLService::create_sys_table_schemas(
         OB_DELETE(ObISQLClient, "create_table", sql_client);
       });
   }
+  LOG_INFO("create_table_batch end");
+  return ret;
+}
+
+int ObDDLService::create_sys_table_schemas(
+    ObDDLOperator &ddl_operator,
+    ObMySQLTransaction &trans,
+    common::ObIArray<ObTableSchema> &tables)
+{
+  int ret = OB_SUCCESS;
+  LOG_INFO("create_sys_table_schemas begin");
+  ret = create_table_batch(ddl_operator, tables);
   LOG_INFO("create_sys_table_schemas end");
   return ret;
 }

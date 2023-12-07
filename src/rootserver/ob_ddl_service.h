@@ -99,6 +99,8 @@ class ObSnapshotInfoManager;
 class ObDDLService
 {
 public:
+  int create_table_batch(ObDDLOperator &ddl_operator, common::ObIArray<ObTableSchema>& tables);
+public:
   typedef std::pair<share::ObLSID, common::ObTabletID> LSTabletID;
 public:
   friend class ObTableGroupHelp;
@@ -130,6 +132,8 @@ public:
   {
      return non_partitioned_tablet_allocator_;
   }
+
+  bool check_key_schema(const share::schema::ObTableSchema& table);
 
   // create_index_table will fill table_id and frozen_version to table_schema
   virtual int create_index_table(const obrpc::ObCreateIndexArg &arg,

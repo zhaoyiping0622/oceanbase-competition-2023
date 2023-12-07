@@ -68,6 +68,8 @@
 #include "close_modules/tde_security/share/ob_master_key_getter.h"
 #endif
 
+#include <thread>
+
 namespace oceanbase
 {
 
@@ -606,9 +608,36 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
     LOG_WARN("broadcast_sys_schemas failed", K(table_schemas), K(ret));
   } else if (OB_FAIL(create_all_partitions())) {
     LOG_WARN("create all partitions fail", K(ret));
-  } else if (OB_FAIL(create_all_schema(ddl_service_, table_schemas))) { 
-    LOG_WARN("create_all_schema failed",  K(table_schemas), K(ret));
+  } 
+
+  ObArray<ObTableSchema> key_tables;
+  for(int i=0;i<table_schemas.count();i++) {
+    auto& table = table_schemas.at(i);
+    if(ddl_service_.check_key_schema(table)) {
+      key_tables.push_back(table);
+    } else {
+      not_key_tables_.push_back(table);
+    }
   }
+
+  if(OB_FAIL(ret)) {
+  } else if (OB_FAIL(create_all_schema(ddl_service_, key_tables))) { 
+    LOG_WARN("create_all_schema failed",  K(key_tables), K(ret));
+  }
+
+  // // 后台慢慢建吧
+  // // auto trace_id = ObCurTraceId::get_trace_id();
+  // std::thread not_key_thread([](ObDDLService* ddl_service, ObArray<ObTableSchema> tables) {
+  //   // if(trace_id!=nullptr) {
+  //   //   ObCurTraceId::set(*trace_id);
+  //   // }
+  //   lib::set_thread_name("not_key_schema_thread");
+  //   ObDDLOperator ddl_operator(ddl_service->get_schema_service(),
+  //       ddl_service->get_sql_proxy());
+  //   ddl_service->
+  //   create_table_batch(ddl_operator, tables);
+  // }, &ddl_service_, not_key_tables);
+
   BOOTSTRAP_CHECK_SUCCESS_V2("create_all_schema");
   ObMultiVersionSchemaService &schema_service = ddl_service_.get_schema_service();
 
@@ -621,6 +650,7 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
   }
   BOOTSTRAP_CHECK_SUCCESS_V2("refresh_schema");
 
+
   if (FAILEDx(add_servers_in_rs_list(server_zone_op_service))) {
     LOG_WARN("fail to add servers in rs_list_", KR(ret));
   } else if (OB_FAIL(wait_all_rs_in_service())) {
@@ -631,6 +661,10 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
 
   BOOTSTRAP_CHECK_SUCCESS();
   return ret;
+}
+
+void ObBootstrap::get_not_key_tables(ObArray<ObTableSchema>& tables) {
+  tables.assign(not_key_tables_);
 }
 
 int ObBootstrap::sort_schema(const ObIArray<ObTableSchema> &table_schemas,

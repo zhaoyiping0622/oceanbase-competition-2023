@@ -198,6 +198,9 @@ private:
   int insert_sys_ls_(const share::schema::ObTenantSchema &tenant_schema,
                      const ObIArray<ObZone> &zone_list);
 
+public:
+  void get_not_key_tables(ObArray<ObTableSchema>& tables);
+
 private:
   share::ObLSTableOperator &lst_operator_;
   ObDDLService &ddl_service_;
@@ -205,6 +208,7 @@ private:
   const obrpc::ObBootstrapArg &arg_;
   obrpc::ObCommonRpcProxy &common_proxy_;
   int64_t begin_ts_;
+  ObArray<ObTableSchema> not_key_tables_;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObBootstrap);
 };

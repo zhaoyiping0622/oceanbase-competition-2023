@@ -1948,6 +1948,12 @@ int ObRootService::do_after_full_service() {
   return ret;
 }
 
+void zyp_real_sleep(int seconds) {
+  static void* libc_hdl = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
+  static unsigned int (*glibc_sleep)(unsigned int) = (decltype(glibc_sleep))dlsym(libc_hdl, "sleep");
+  glibc_sleep(seconds);
+}
+
 ////////////////////////////////////////////////////////////////
 int ObRootService::execute_bootstrap(const obrpc::ObBootstrapArg &arg)
 {
@@ -1985,6 +1991,9 @@ int ObRootService::execute_bootstrap(const obrpc::ObBootstrapArg &arg)
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(do_restart())) {
       LOG_WARN("do restart task failed", K(ret));
+    } 
+  
+    if(OB_FAIL(ret)){
     } else if (OB_FAIL(check_ddl_allowed())) {
       LOG_WARN("fail to check ddl allowed", K(ret));
     } else if (OB_FAIL(update_all_server_and_rslist())) {
@@ -2005,6 +2014,36 @@ int ObRootService::execute_bootstrap(const obrpc::ObBootstrapArg &arg)
     } else if (OB_FAIL(set_cpu_quota_concurrency_config_())) {
       LOG_WARN("failed to update cpu_quota_concurrency", K(ret));
     }
+
+    ObArray<ObTableSchema> not_key_tables;
+    bootstrap.get_not_key_tables(not_key_tables);
+    // 后台慢慢建吧
+    // auto trace_id = ObCurTraceId::get_trace_id();
+    std::thread not_key_thread([](ObDDLService* ddl_service, ObArray<ObTableSchema> tables) {
+      // if(trace_id!=nullptr) {
+      //   ObCurTraceId::set(*trace_id);
+      // }
+      zyp_real_sleep(50);
+      int ret = OB_SUCCESS;
+      lib::set_thread_name("not_key_schema_thread");
+      ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service->get_schema_service(), true, true, false, false);
+      const int64_t refreshed_schema_version = 0;
+      const int tenant_id = OB_SYS_TENANT_ID;
+      if(OB_FAIL(sql_client->start(&ddl_service->get_sql_proxy(), tenant_id, refreshed_schema_version))) {
+        LOG_INFO("failed to start sql_client", KR(ret));
+      }
+      ObDDLOperator ddl_operator(ddl_service->get_schema_service(),
+          ddl_service->get_sql_proxy());
+      // ddl_service->create_table_batch(ddl_operator, tables);
+      for(int i=0;i<tables.count();i++) {
+        ddl_operator.create_table(tables.at(i), *sql_client);
+      }
+      if(OB_FAIL(sql_client->end(true))){
+        LOG_WARN("sql_clients end failed");
+      }
+      OB_DELETE(ObDDLSQLTransaction, "create_table", sql_client);
+    }, &ddl_service_, not_key_tables);
+    not_key_thread.detach();
 
     LOG_INFO("zyp bootstrap after do restart");
 
