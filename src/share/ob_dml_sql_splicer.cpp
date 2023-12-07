@@ -483,7 +483,7 @@ int ObDMLSqlSplicer::splice_insert_sql_without_plancache(const char *table_name,
   } else if (columns_.count() <= 0) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("column_count is invalid", K(ret), "column_count", columns_.count());
-  } else if (OB_FAIL(splice_insert(table_name, "INSERT /*+use_plan_cache(none)*/", sql))) {
+  } else if (OB_FAIL(splice_insert(table_name, "INSERT ", sql))) {
     LOG_WARN("splice insert failed", K(ret), K(table_name));
   }
   return ret;
