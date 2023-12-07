@@ -379,6 +379,10 @@ ObDMLSqlSplicer& ObCoreTableProxyBatch::getDML() {
 namespace schema {
 
 TableBatchCreateByPass::TableBatchCreateByPass(common::ObIArray<ObTableSchema>& tables, StartFunc start, EndFunc end): client_start_(start), client_end_(end), tables_(tables) {
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return;
+  }
   tenant_id_ = tables_.at(0).get_tenant_id();
   exec_tenant_id_ = ObSchemaUtils::get_exec_tenant_id(tenant_id_);
   global_client_ = client_start_();
@@ -392,6 +396,10 @@ TableBatchCreateByPass::TableBatchCreateByPass(common::ObIArray<ObTableSchema>& 
 }
 
 TableBatchCreateByPass::~TableBatchCreateByPass() {
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return;
+  }
   client_end_(global_client_);
   // auto free_all=[&](ObArray<ZypRow*>&tmp) { for(int i=0;i<tmp.count();i++)OB_DELETE(ZypRow, "create_table", tmp.at(i)); };
   // free_all(all_core_table_rows_);
@@ -405,6 +413,10 @@ TableBatchCreateByPass::~TableBatchCreateByPass() {
 void TableBatchCreateByPass::prepare_not_core() {
   LOG_INFO("TableBatchCreateByPass prepare_not_core begin");
   DEFER({LOG_INFO("TableBatchCreateByPass prepare_not_core end");});
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return;
+  }
   auto base_func = [&](int i) {
     auto& table = tables_.at(i);
     auto table_id = table.get_table_id();
@@ -424,6 +436,10 @@ void TableBatchCreateByPass::prepare_not_core() {
 void TableBatchCreateByPass::prepare_core() {
   LOG_INFO("TableBatchCreateByPass prepare_core begin");
   DEFER({LOG_INFO("TableBatchCreateByPass prepare_core end");});
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return;
+  }
   ParallelRunner runner;
   runner.run_parallel_range(0, (int)tables_.count(), [&](int i) {
     auto& table = tables_.at(i);
@@ -438,6 +454,11 @@ int TableBatchCreateByPass::run() {
   int ret = OB_SUCCESS;
   LOG_INFO("TableBatchCreateByPass run begin");
   DEFER({LOG_INFO("TableBatchCreateByPass run end");});
+
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return OB_SUCCESS;
+  }
 
   std::vector<ZypInsertInfo*> insert_info={
     OB_NEW(ZypInsertInfo, "insert_info", all_core_table_rows_),
@@ -729,6 +750,7 @@ int TableBatchCreateByPass::run_insert_all_ddl_operation() {
 void TableBatchCreateNormal::prepare() {
   LOG_INFO("TableBatchCreateNormal prepare begin");
   DEFER({LOG_INFO("TableBatchCreateNormal prepare end");});
+  if(tables_.count() == 0) return;
   ParallelRunner runner;
   runner.run_parallel_range(0, (int)tables_.count(), [&](int i) {
     auto &table = tables_.at(i);
@@ -752,6 +774,10 @@ void TableBatchCreateNormal::prepare() {
 void TableBatchCreateNormal::run() {
   LOG_INFO("TableBatchCreateNormal run begin");
   DEFER({LOG_INFO("TableBatchCreateNormal run end");});
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return;
+  }
   ParallelRunner runner;
   runner.run_parallel([&](){
     void* sql;
@@ -766,6 +792,10 @@ void TableBatchCreateNormal::run() {
 
 TableBatchCreateNormal::TableBatchCreateNormal(ObIArray<oceanbase::share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end, ObTableSqlService* sql_service):
   client_start_(start), client_end_(end), tables_(tables), sql_service_(sql_service) {
+  if(tables_.count() == 0) {
+    LOG_INFO("tables is empty");
+    return;
+  }
   tenant_id_ = tables.at(0).get_tenant_id();
   exec_tenant_id_ = ObSchemaUtils::get_exec_tenant_id(tenant_id_);
   queue_.init(tables.count()*2);

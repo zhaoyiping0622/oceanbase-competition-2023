@@ -495,6 +495,8 @@ public:
 
   int run();
 
+private:
+
   void init_core_all_table_idx() ;
 
   void init_core_all_column_idx();
@@ -528,7 +530,6 @@ public:
   int run_insert_all_ddl_operation();
 
 
-private:
   StartFunc client_start_;
   EndFunc  client_end_;
   common::ObIArray<share::schema::ObTableSchema>& tables_;
@@ -564,11 +565,12 @@ public:
   using ObTableSqlService = share::schema::ObTableSqlService;
 
   TableBatchCreateNormal(ObIArray<oceanbase::share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end, ObTableSqlService* sql_service);
+  void prepare();
+  void run();
+private:
   StartFunc client_start_;
   EndFunc  client_end_;
   ObIArray<oceanbase::share::schema::ObTableSchema>& tables_;
-  void prepare();
-  void run();
   LightyQueue queue_;
   ObTableSqlService* sql_service_;
   int64_t tenant_id_;
