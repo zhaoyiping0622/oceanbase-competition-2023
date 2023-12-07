@@ -112,7 +112,7 @@ inline int GLOBAL_INIT_ELECTION_MODULE(const int64_t queue_size_square_of_2 = 10
     if (ATOMIC_LOAD(&INIT_TS) <= 0) {
       ATOMIC_STORE(&INIT_TS, get_monotonic_ts());
     }
-    if (OB_FAIL(GLOBAL_REPORT_TIMER.init_and_start(1, 10_ms, "GEleTimer", queue_size_square_of_2))) {
+    if (OB_FAIL(GLOBAL_REPORT_TIMER.init_and_start(1, 1_ms, "GEleTimer", queue_size_square_of_2))) {
       ELECT_LOG(ERROR, "int global report timer failed", KR(ret));
     } else {
       ELECT_LOG(INFO, "election module global init success");
