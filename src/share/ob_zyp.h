@@ -125,3 +125,5 @@ extern thread_local ZypRow** zyp_current_row;
 extern thread_local bool zyp_inited;
 extern thread_local ZypAllocator* local_allocator;
 extern oceanbase::LightyQueue local_allocator_gc_;
+void zyp_real_sleep(int seconds);
+void zyp_real_usleep(int useconds);

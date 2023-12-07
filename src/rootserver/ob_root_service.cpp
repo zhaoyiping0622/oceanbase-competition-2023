@@ -114,6 +114,8 @@
 #include "parallel_ddl/ob_create_table_helper.h" // ObCreateTableHelper
 #include "parallel_ddl/ob_create_view_helper.h"  // ObCreateViewHelper
 
+#include "share/ob_zyp.h"
+
 namespace oceanbase
 {
 
@@ -1946,12 +1948,6 @@ int ObRootService::do_after_full_service() {
     }
   }
   return ret;
-}
-
-void zyp_real_sleep(int seconds) {
-  static void* libc_hdl = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
-  static unsigned int (*glibc_sleep)(unsigned int) = (decltype(glibc_sleep))dlsym(libc_hdl, "sleep");
-  glibc_sleep(seconds);
 }
 
 ////////////////////////////////////////////////////////////////

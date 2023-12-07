@@ -2,6 +2,7 @@
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "share/datum/ob_datum.h"
 #include <mutex>
+#include <dlfcn.h>
 
 __thread bool zyp_come = false;
 zyp_string zyp_extra_info;
@@ -25,6 +26,7 @@ void zyp_unlimit_log(const char* buf, size_t size) {
   if(zyp_fd==-1)return;
   std::unique_lock<std::mutex>unique_lock(mutex);
   write(zyp_fd, buf, size);
+  write(zyp_fd, "\n", 1);
 }
 
 bool zyp_enabled(){return zyp_come;}
@@ -85,4 +87,16 @@ ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
   while(count>size) count--, ret.pop_back();
   for(int i=0;i<ret.count();i++)ret[i]->init_datums();
   return ret;
+}
+
+void zyp_real_sleep(int seconds) {
+  static void* libc_hdl = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
+  static unsigned int (*glibc_sleep)(unsigned int) = (decltype(glibc_sleep))dlsym(libc_hdl, "sleep");
+  glibc_sleep(seconds);
+}
+
+void zyp_real_usleep(int useconds) {
+  static void* libc_hdl = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
+  static unsigned int (*glibc_usleep)(unsigned int) = (decltype(glibc_usleep))dlsym(libc_hdl, "usleep");
+  glibc_usleep(useconds);
 }

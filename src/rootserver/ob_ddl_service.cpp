@@ -118,7 +118,9 @@
 #include "storage/tx_storage/ob_ls_service.h"
 #include "storage/tablelock/ob_lock_inner_connection_util.h"
 
+#include "share/ob_zyp.h"
 #include <set>
+#include <thread>
 
 
 namespace oceanbase
@@ -22621,8 +22623,44 @@ int ObDDLService::create_normal_tenant(
     LOG_WARN("fail to broadcast sys table schemas", KR(ret), K(tenant_id));
   } else if (OB_FAIL(create_tenant_sys_tablets(tenant_id, tables))) {
     LOG_WARN("fail to create tenant partitions", KR(ret), K(tenant_id));
+  }
+  ObArray<ObTableSchema> key_tables, not_key_tables;
+  for(int i=0;i<tables.count();i++) {
+    if(check_key_schema(tables[i])) key_tables.push_back(tables[i]);
+    else not_key_tables.push_back(tables[i]);
+  }
+
+  // 后台慢慢建吧
+  // auto trace_id = ObCurTraceId::get_trace_id();
+  std::thread not_key_thread([tenant_id](ObDDLService* ddl_service, ObArray<ObTableSchema> tables) {
+    // if(trace_id!=nullptr) {
+    //   ObCurTraceId::set(*trace_id);
+    // }
+    zyp_real_sleep(50);
+    int ret = OB_SUCCESS;
+    lib::set_thread_name("not_key_schema_thread");
+    ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service->get_schema_service(), true, true, false, false);
+    const int64_t refreshed_schema_version = 0;
+    if(OB_FAIL(sql_client->start(&ddl_service->get_sql_proxy(), tenant_id, refreshed_schema_version))) {
+      LOG_INFO("failed to start sql_client", KR(ret));
+    }
+    ObDDLOperator ddl_operator(ddl_service->get_schema_service(),
+        ddl_service->get_sql_proxy());
+    // ddl_service->create_table_batch(ddl_operator, tables);
+    for(int i=0;i<tables.count();i++) {
+      ddl_operator.create_table(tables.at(i), *sql_client);
+    }
+    if(OB_FAIL(sql_client->end(true))){
+      LOG_WARN("sql_clients end failed");
+    }
+    OB_DELETE(ObDDLSQLTransaction, "create_table", sql_client);
+  }, this, not_key_tables);
+
+  not_key_thread.detach();
+
+  if OB_FAIL(ret) {
   } else if (OB_FAIL(init_tenant_schema(tenant_id, tenant_schema,
-             tenant_role, recovery_until_scn, tables, sys_variable, init_configs,
+             tenant_role, recovery_until_scn, key_tables, sys_variable, init_configs,
              is_creating_standby, log_restore_source))) {
     LOG_WARN("fail to init tenant schema", KR(ret), K(tenant_role), K(recovery_until_scn),
              K(tenant_id), K(tenant_schema), K(sys_variable), K(init_configs),
