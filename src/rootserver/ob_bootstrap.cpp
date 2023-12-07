@@ -625,19 +625,6 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
     LOG_WARN("create_all_schema failed",  K(key_tables), K(ret));
   }
 
-  // // 后台慢慢建吧
-  // // auto trace_id = ObCurTraceId::get_trace_id();
-  // std::thread not_key_thread([](ObDDLService* ddl_service, ObArray<ObTableSchema> tables) {
-  //   // if(trace_id!=nullptr) {
-  //   //   ObCurTraceId::set(*trace_id);
-  //   // }
-  //   lib::set_thread_name("not_key_schema_thread");
-  //   ObDDLOperator ddl_operator(ddl_service->get_schema_service(),
-  //       ddl_service->get_sql_proxy());
-  //   ddl_service->
-  //   create_table_batch(ddl_operator, tables);
-  // }, &ddl_service_, not_key_tables);
-
   BOOTSTRAP_CHECK_SUCCESS_V2("create_all_schema");
   ObMultiVersionSchemaService &schema_service = ddl_service_.get_schema_service();
 

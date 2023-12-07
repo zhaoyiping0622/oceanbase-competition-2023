@@ -22632,29 +22632,7 @@ int ObDDLService::create_normal_tenant(
 
   // 后台慢慢建吧
   // auto trace_id = ObCurTraceId::get_trace_id();
-  std::thread not_key_thread([tenant_id](ObDDLService* ddl_service, ObArray<ObTableSchema> tables) {
-    // if(trace_id!=nullptr) {
-    //   ObCurTraceId::set(*trace_id);
-    // }
-    zyp_real_sleep(50);
-    int ret = OB_SUCCESS;
-    lib::set_thread_name("not_key_schema_thread");
-    ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service->get_schema_service(), true, true, false, false);
-    const int64_t refreshed_schema_version = 0;
-    if(OB_FAIL(sql_client->start(&ddl_service->get_sql_proxy(), tenant_id, refreshed_schema_version))) {
-      LOG_INFO("failed to start sql_client", KR(ret));
-    }
-    ObDDLOperator ddl_operator(ddl_service->get_schema_service(),
-        ddl_service->get_sql_proxy());
-    // ddl_service->create_table_batch(ddl_operator, tables);
-    for(int i=0;i<tables.count();i++) {
-      ddl_operator.create_table(tables.at(i), *sql_client);
-    }
-    if(OB_FAIL(sql_client->end(true))){
-      LOG_WARN("sql_clients end failed");
-    }
-    OB_DELETE(ObDDLSQLTransaction, "create_table", sql_client);
-  }, this, not_key_tables);
+  std::thread not_key_thread(zyp_create_table_async, this, tenant_id, not_key_tables);
 
   not_key_thread.detach();
 
@@ -23352,7 +23330,7 @@ bool ObDDLService::check_key_schema(const ObTableSchema& table) {
     "__all_zone_merge_info",
     "__tenant_parameter",
   };
-  return key_schemas.count(table.get_table_name());
+  return is_core_table(table.get_table_id()) || key_schemas.count(table.get_table_name());
 }
 
 int ObDDLService::create_table_batch(ObDDLOperator &ddl_operator, common::ObIArray<ObTableSchema>& tables) {

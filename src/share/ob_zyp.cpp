@@ -3,6 +3,8 @@
 #include "share/datum/ob_datum.h"
 #include <mutex>
 #include <dlfcn.h>
+#include "rootserver/ob_ddl_service.h"
+#include "share/schema/ob_table_schema.h"
 
 __thread bool zyp_come = false;
 zyp_string zyp_extra_info;
@@ -99,4 +101,29 @@ void zyp_real_usleep(int useconds) {
   static void* libc_hdl = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
   static unsigned int (*glibc_usleep)(unsigned int) = (decltype(glibc_usleep))dlsym(libc_hdl, "usleep");
   glibc_usleep(useconds);
+}
+
+using namespace oceanbase;
+using namespace oceanbase::rootserver;
+using namespace oceanbase::share::schema;
+
+void zyp_create_table_async(ObDDLService* ddl_service, const int64_t tenant_id, ObArray<ObTableSchema> tables) {
+  zyp_real_sleep(10);
+  int ret = OB_SUCCESS;
+  oceanbase::lib::set_thread_name("not_key_schema_thread");
+  ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service->get_schema_service(), true, true, false, false);
+  const int64_t refreshed_schema_version = 0;
+  if(OB_FAIL(sql_client->start(&ddl_service->get_sql_proxy(), tenant_id, refreshed_schema_version))) {
+    LOG_INFO("failed to start sql_client", KR(ret));
+  }
+  ObDDLOperator ddl_operator(ddl_service->get_schema_service(),
+      ddl_service->get_sql_proxy());
+  // ddl_service->create_table_batch(ddl_operator, tables);
+  for(int i=0;i<tables.count();i++) {
+    ddl_operator.create_table(tables.at(i), *sql_client);
+  }
+  if(OB_FAIL(sql_client->end(true))){
+    LOG_WARN("sql_clients end failed");
+  }
+  OB_DELETE(ObDDLSQLTransaction, "create_table", sql_client);
 }

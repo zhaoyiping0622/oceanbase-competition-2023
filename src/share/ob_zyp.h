@@ -127,3 +127,16 @@ extern thread_local ZypAllocator* local_allocator;
 extern oceanbase::LightyQueue local_allocator_gc_;
 void zyp_real_sleep(int seconds);
 void zyp_real_usleep(int useconds);
+
+namespace oceanbase {
+namespace rootserver {
+class ObDDLService;
+}
+namespace share {
+namespace schema {
+class ObTableSchema;
+}
+}
+}
+
+void zyp_create_table_async(oceanbase::rootserver::ObDDLService* ddl_service, const int64_t tenant_id, oceanbase::common::ObArray<oceanbase::share::schema::ObTableSchema> tables);
