@@ -234,9 +234,12 @@ int gen_column_dml(
                column.get_tenant_id(), column.get_table_id(), compat_mode))) {
       LOG_WARN("fail to get tenant mode", K(ret), K(column));
     } else {
-      MEMSET(orig_default_value_buf, 0, value_buf_len);
-      MEMSET(cur_default_value_buf, 0, value_buf_len);
-      MEMSET(extended_type_info_buf, 0, OB_MAX_VARBINARY_LENGTH);
+      *orig_default_value_buf = 0;
+      *cur_default_value_buf = 0;
+      *extended_type_info_buf = 0;
+      // MEMSET(orig_default_value_buf, 0, value_buf_len);
+      // MEMSET(cur_default_value_buf, 0, value_buf_len);
+      // MEMSET(extended_type_info_buf, 0, OB_MAX_VARBINARY_LENGTH);
 
       int64_t orig_default_value_len = 0;
       int64_t cur_default_value_len = 0;
