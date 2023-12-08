@@ -115,12 +115,10 @@ schema_create_func import_schemas [] = {
 void zyp_construct_not_import_schema_tenant(ObArray<ObTableSchema> &tables, const int64_t tenant_id) {
   int ret = OB_SUCCESS;
   HEAP_VARS_2((ObTableSchema, table_schema), (ObTableSchema, data_schema)) {
-    // for (int64_t i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(creator_ptr_arrays); ++i) {
-    for (const schema_create_func *creator_ptr = import_schemas;
-        OB_SUCC(ret) && OB_NOT_NULL(*creator_ptr); ++creator_ptr) {
+    auto construct =[&](schema_create_func func) {
       table_schema.reset();
       bool exist = false;
-      if (OB_FAIL((*creator_ptr)(table_schema))) {
+      if (OB_FAIL(func(table_schema))) {
         LOG_WARN("fail to gen sys table schema", KR(ret));
       } else if (OB_FAIL(ObSchemaUtils::construct_tenant_space_full_table(
               tenant_id, table_schema))) {
@@ -144,6 +142,13 @@ void zyp_construct_not_import_schema_tenant(ObArray<ObTableSchema> &tables, cons
           LOG_WARN("fail to add lob table to sys table", KR(ret), K(data_table_id));
         }
       } // end lob aux table
+
+    };
+    construct(ObInnerTableSchema::all_core_table_schema);
+    // for (int64_t i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(creator_ptr_arrays); ++i) {
+    for (const schema_create_func *creator_ptr = not_import_schemas;
+        OB_SUCC(ret) && OB_NOT_NULL(*creator_ptr); ++creator_ptr) {
+      construct(*creator_ptr);
     }
   }
 }
@@ -255,6 +260,7 @@ void zyp_create_table_async(obrpc::ObSrvRpcProxy* rpc_proxy,oceanbase::obrpc::Ob
     zyp_construct_not_import_schema_tenant(tables, tenant_id);
     ddl_service->broadcast_sys_table_schemas(tenant_id, tables);
   }
+  LOG_INFO("tables count", K(tables.count()), K(tenant_id));
   ObDDLSQLTransaction* sql_client = OB_NEW(ObDDLSQLTransaction, "create_table", &ddl_service->get_schema_service(), true, true, false, false);
   const int64_t refreshed_schema_version = 0;
   if(OB_FAIL(sql_client->start(&ddl_service->get_sql_proxy(), tenant_id, refreshed_schema_version))) {
