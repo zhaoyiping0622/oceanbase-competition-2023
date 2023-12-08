@@ -153,6 +153,8 @@ int ObLSTableOperator::get(
     const ObLSTable::Mode mode,
     ObLSInfo &ls_info)
 {
+  LOG_INFO("begin ObLSTableOperator::get");
+  DEFER({ LOG_INFO("end ObLSTableOperator::get"); });
   int ret = OB_SUCCESS;
   int64_t start_time = ObTimeUtility::fast_current_time();
   ObLSTable *lst = NULL;
@@ -178,6 +180,7 @@ int ObLSTableOperator::get(
       LOG_WARN("get log stream info failed", KR(ret), KT(tenant_id), K(ls_id), K(mode));
     }
   }
+  LOG_INFO("middle ObLSTableOperator::get");
   if (OB_SUCC(ret)
       && is_sys_tenant(tenant_id)
       && ObLSTable::COMPOSITE_MODE == mode) {

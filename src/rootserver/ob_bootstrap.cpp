@@ -447,7 +447,7 @@ int ObPreBootstrap::wait_elect_ls(
     timeout = max(timeout, THIS_WORKER.get_timeout_remain());
   }
 
-  LOG_INFO("before leader_waiter_ wait");
+  LOG_INFO("before leader_waiter_ wait", K(timeout));
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("check_inner_stat failed", K(ret));
   } else if (OB_FAIL(ls_leader_waiter_.wait(

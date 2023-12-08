@@ -101,6 +101,7 @@ int ObLSLeaderElectionWaiter::wait(
     const int64_t timeout,
     common::ObAddr &leader)
 {
+  LOG_INFO("begin ObLSLeaderElectionWaiter::wait");
   int ret = OB_SUCCESS;
   const int64_t start_time = ObTimeUtility::current_time();
   const int64_t abs_timeout = start_time + timeout;
@@ -171,6 +172,7 @@ int ObLSLeaderElectionWaiter::wait_elect_leader(
   } else {
     int64_t sleep_interval = std::max(1l, check_interval / 100);
     while (!stop_) {
+      LOG_INFO("ObLSLeaderElectionWaiter::wait_elect_leader");
       const int64_t cluster_id = GCONF.cluster_id;
       if (OB_FAIL(lst_operator_.get(cluster_id, tenant_id,
           ls_id, share::ObLSTable::DEFAULT_MODE,ls_info))) {
@@ -201,7 +203,9 @@ int ObLSLeaderElectionWaiter::wait_elect_leader(
         }
       }
       sleep_interval = std::min(sleep_interval * 2, check_interval);
+      LOG_INFO("in wait_elect_leader", K(sleep_interval));
     }
+    LOG_INFO("wait_elect_leader while end", K(sleep_interval));
     if (stop_ && OB_SUCC(ret)) {
       ret = OB_CANCELED;
       LOG_WARN("stop flag set, cancel task", KR(ret));

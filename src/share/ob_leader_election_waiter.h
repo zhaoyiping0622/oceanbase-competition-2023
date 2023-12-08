@@ -88,8 +88,8 @@ public:
       const int64_t timeout);
   share::ObLSTableOperator &get_lst_operator() { return lst_operator_; }
 private:
-  static const int64_t CHECK_LEADER_ELECT_INTERVAL_US = 500 * 1000L; //500ms
-  static const int64_t CHECK_LEADER_CHANGE_INTERVAL_US = 3000 * 1000L; //3s
+  static const int64_t CHECK_LEADER_ELECT_INTERVAL_US = 50 * 1000L; //500ms
+  static const int64_t CHECK_LEADER_CHANGE_INTERVAL_US = 300 * 1000L; //3s
 
   int wait_elect_leader(
       const uint64_t tenant_id,
