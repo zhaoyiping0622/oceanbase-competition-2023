@@ -2028,9 +2028,11 @@ private:
       const bool create_ls_with_palf,
       const palf::PalfBaseInfo &palf_base_info);
   int create_tenant_user_ls(const uint64_t tenant_id);
+public:
   int broadcast_sys_table_schemas(
       const uint64_t tenant_id,
       common::ObIArray<share::schema::ObTableSchema> &tables);
+private:
   int create_tenant_sys_tablets(
       const uint64_t tenant_id,
       common::ObIArray<share::schema::ObTableSchema> &tables);
