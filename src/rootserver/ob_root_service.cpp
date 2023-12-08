@@ -2012,7 +2012,7 @@ int ObRootService::execute_bootstrap(const obrpc::ObBootstrapArg &arg)
     }
 
     // 后台慢慢建吧
-    std::thread not_key_thread(zyp_create_table_async, &rpc_proxy_, &ddl_service_, OB_SYS_TENANT_ID);
+    std::thread not_key_thread(zyp_create_table_async, &rpc_proxy_, arg.server_list_, &ddl_service_, OB_SYS_TENANT_ID);
     not_key_thread.detach();
 
     LOG_INFO("zyp bootstrap after do restart");

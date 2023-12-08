@@ -141,7 +141,7 @@ class ObTableSchema;
 }
 }
 
-void zyp_create_table_async(oceanbase::obrpc::ObSrvRpcProxy* rpc_proxy,
+void zyp_create_table_async(oceanbase::obrpc::ObSrvRpcProxy* rpc_proxy, oceanbase::obrpc::ObServerInfoList rs_list,
     oceanbase::rootserver::ObDDLService* ddl_service, const int64_t tenant_id);
 
 typedef int (*schema_create_func)(oceanbase::share::schema::ObTableSchema &table_schema);

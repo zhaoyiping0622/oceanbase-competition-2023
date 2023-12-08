@@ -22633,7 +22633,8 @@ int ObDDLService::create_normal_tenant(
 
   // 后台慢慢建吧
   // auto trace_id = ObCurTraceId::get_trace_id();
-  std::thread not_key_thread(zyp_create_table_async, nullptr, this, tenant_id);
+  std::thread not_key_thread(zyp_create_table_async, nullptr, 
+      common::ObSArray<ObServerInfo>(), this, tenant_id);
 
   not_key_thread.detach();
 
