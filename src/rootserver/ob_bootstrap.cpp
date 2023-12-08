@@ -613,16 +613,6 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
     LOG_WARN("create all partitions fail", K(ret));
   } 
 
-  // ObArray<ObTableSchema> key_tables;
-  // for(int i=0;i<table_schemas.count();i++) {
-  //   auto& table = table_schemas.at(i);
-  //   if(ddl_service_.check_key_schema(table)) {
-  //     key_tables.push_back(table);
-  //   } else {
-  //     not_key_tables_.push_back(table);
-  //   }
-  // }
-
   if(OB_FAIL(ret)) {
   } else if (OB_FAIL(create_all_schema(ddl_service_, table_schemas))) { 
     LOG_WARN("create_all_schema failed",  K(table_schemas), K(ret));

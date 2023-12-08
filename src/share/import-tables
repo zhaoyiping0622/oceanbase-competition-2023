@@ -112,4 +112,8 @@ ObInnerTableSchema::all_virtual_ddl_task_status_schema,
 ObInnerTableSchema::all_virtual_ls_meta_table_schema,
 ObInnerTableSchema::all_virtual_tenant_info_schema,
 ObInnerTableSchema::all_virtual_unit_schema,
-ObInnerTableSchema::all_virtual_ls_info_schema
+ObInnerTableSchema::all_virtual_ls_info_schema,
+ObInnerTableSchema::dba_ob_tenants_schema,
+ObInnerTableSchema::dba_ob_unit_configs_schema,
+ObInnerTableSchema::dba_ob_resource_pools_schema,
+ObInnerTableSchema::dba_ob_servers_schema
