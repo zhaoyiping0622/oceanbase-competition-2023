@@ -68,6 +68,8 @@
 #include "close_modules/tde_security/share/ob_master_key_getter.h"
 #endif
 
+#include<share/ob_zyp.h>
+
 #include <thread>
 
 namespace oceanbase
@@ -445,6 +447,7 @@ int ObPreBootstrap::wait_elect_ls(
     timeout = max(timeout, THIS_WORKER.get_timeout_remain());
   }
 
+  LOG_INFO("before leader_waiter_ wait");
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("check_inner_stat failed", K(ret));
   } else if (OB_FAIL(ls_leader_waiter_.wait(
@@ -610,19 +613,19 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
     LOG_WARN("create all partitions fail", K(ret));
   } 
 
-  ObArray<ObTableSchema> key_tables;
-  for(int i=0;i<table_schemas.count();i++) {
-    auto& table = table_schemas.at(i);
-    if(ddl_service_.check_key_schema(table)) {
-      key_tables.push_back(table);
-    } else {
-      not_key_tables_.push_back(table);
-    }
-  }
+  // ObArray<ObTableSchema> key_tables;
+  // for(int i=0;i<table_schemas.count();i++) {
+  //   auto& table = table_schemas.at(i);
+  //   if(ddl_service_.check_key_schema(table)) {
+  //     key_tables.push_back(table);
+  //   } else {
+  //     not_key_tables_.push_back(table);
+  //   }
+  // }
 
   if(OB_FAIL(ret)) {
-  } else if (OB_FAIL(create_all_schema(ddl_service_, key_tables))) { 
-    LOG_WARN("create_all_schema failed",  K(key_tables), K(ret));
+  } else if (OB_FAIL(create_all_schema(ddl_service_, table_schemas))) { 
+    LOG_WARN("create_all_schema failed",  K(table_schemas), K(ret));
   }
 
   BOOTSTRAP_CHECK_SUCCESS_V2("create_all_schema");
@@ -835,14 +838,14 @@ int ObBootstrap::create_all_partitions()
     } else {
       // create core table partition
       for (int64_t i = 0; OB_SUCC(ret) && NULL != core_table_schema_creators[i]; ++i) {
-        if (OB_FAIL(prepare_create_partition(
+        if (import_schemas_set->count((void*)(core_table_schema_creators[i])) && OB_FAIL(prepare_create_partition(
             table_creator, core_table_schema_creators[i]))) {
           LOG_WARN("prepare create partition fail", K(ret));
         }
       }
       // create sys table partition
       for (int64_t i = 0; OB_SUCC(ret) && NULL != sys_table_schema_creators[i]; ++i) {
-        if (OB_FAIL(prepare_create_partition(
+        if (import_schemas_set->count((void*)(sys_table_schema_creators[i])) && OB_FAIL(prepare_create_partition(
             table_creator, sys_table_schema_creators[i]))) {
           LOG_WARN("prepare create partition fail", K(ret));
         }
@@ -895,12 +898,12 @@ int ObBootstrap::construct_all_schema(ObIArray<ObTableSchema> &table_schemas)
 {
 	//OB_ZYP_TIME_COUNT;
   int ret = OB_SUCCESS;
-  const schema_create_func *creator_ptr_arrays[] = {
-    core_table_schema_creators,
-    sys_table_schema_creators,
-    virtual_table_schema_creators,
-    sys_view_schema_creators
-  };
+  // const schema_create_func *creator_ptr_arrays[] = {
+  //   core_table_schema_creators,
+  //   sys_table_schema_creators,
+  //   virtual_table_schema_creators,
+  //   sys_view_schema_creators
+  // };
 
   ObTableSchema table_schema;
   if (OB_FAIL(check_inner_stat())) {
@@ -909,8 +912,8 @@ int ObBootstrap::construct_all_schema(ObIArray<ObTableSchema> &table_schemas)
     LOG_WARN("reserve failed", "capacity", OB_SYS_TABLE_COUNT, KR(ret));
   } else {
     HEAP_VAR(ObTableSchema, data_schema) {
-      for (int64_t i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(creator_ptr_arrays); ++i) {
-        for (const schema_create_func *creator_ptr = creator_ptr_arrays[i];
+      // for (int64_t i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(creator_ptr_arrays); ++i) {
+        for (const schema_create_func *creator_ptr = import_schemas;
              OB_SUCCESS == ret && NULL != *creator_ptr; ++creator_ptr) {
           table_schema.reset();
           bool exist = false;
@@ -944,7 +947,7 @@ int ObBootstrap::construct_all_schema(ObIArray<ObTableSchema> &table_schemas)
             }
           }
         }
-      }
+      // }
     }
   }
   BOOTSTRAP_CHECK_SUCCESS();

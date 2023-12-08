@@ -22624,11 +22624,12 @@ int ObDDLService::create_normal_tenant(
   } else if (OB_FAIL(create_tenant_sys_tablets(tenant_id, tables))) {
     LOG_WARN("fail to create tenant partitions", KR(ret), K(tenant_id));
   }
-  ObArray<ObTableSchema> key_tables, not_key_tables;
-  for(int i=0;i<tables.count();i++) {
-    if(check_key_schema(tables[i])) key_tables.push_back(tables[i]);
-    else not_key_tables.push_back(tables[i]);
-  }
+  // ObArray<ObTableSchema> key_tables;
+  ObArray<ObTableSchema> not_key_tables;
+  // for(int i=0;i<tables.count();i++) {
+  //   if(check_key_schema(tables[i])) key_tables.push_back(tables[i]);
+  //   else not_key_tables.push_back(tables[i]);
+  // }
 
   // 后台慢慢建吧
   // auto trace_id = ObCurTraceId::get_trace_id();
@@ -22638,7 +22639,7 @@ int ObDDLService::create_normal_tenant(
 
   if OB_FAIL(ret) {
   } else if (OB_FAIL(init_tenant_schema(tenant_id, tenant_schema,
-             tenant_role, recovery_until_scn, key_tables, sys_variable, init_configs,
+             tenant_role, recovery_until_scn, tables, sys_variable, init_configs,
              is_creating_standby, log_restore_source))) {
     LOG_WARN("fail to init tenant schema", KR(ret), K(tenant_role), K(recovery_until_scn),
              K(tenant_id), K(tenant_schema), K(sys_variable), K(init_configs),

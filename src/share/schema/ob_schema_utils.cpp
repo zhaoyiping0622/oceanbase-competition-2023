@@ -25,6 +25,7 @@
 #include "sql/resolver/expr/ob_raw_expr_util.h"
 #include "sql/session/ob_sql_session_info.h"
 #include "observer/ob_server_struct.h"
+#include "share/ob_zyp.h"
 namespace oceanbase
 {
 using namespace common;
@@ -449,16 +450,16 @@ int ObSchemaUtils::construct_inner_table_schemas(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid tenant id", KR(ret), K(tenant_id));
   } else {
-    const schema_create_func *creator_ptr_arrays[] = {
-      all_core_table_schema_creator,
-      core_table_schema_creators,
-      sys_table_schema_creators,
-      virtual_table_schema_creators,
-      sys_view_schema_creators
-    };
+    // const schema_create_func *creator_ptr_arrays[] = {
+    //   all_core_table_schema_creator,
+    //   core_table_schema_creators,
+    //   sys_table_schema_creators,
+    //   virtual_table_schema_creators,
+    //   sys_view_schema_creators
+    // };
     HEAP_VARS_2((ObTableSchema, table_schema), (ObTableSchema, data_schema)) {
-      for (int64_t i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(creator_ptr_arrays); ++i) {
-        for (const schema_create_func *creator_ptr = creator_ptr_arrays[i];
+      // for (int64_t i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(creator_ptr_arrays); ++i) {
+        for (const schema_create_func *creator_ptr = import_schemas;
              OB_SUCC(ret) && OB_NOT_NULL(*creator_ptr); ++creator_ptr) {
           table_schema.reset();
           bool exist = false;
@@ -488,7 +489,7 @@ int ObSchemaUtils::construct_inner_table_schemas(
           } // end lob aux table
         }
       }
-    }
+    // }
   }
   return ret;
 }

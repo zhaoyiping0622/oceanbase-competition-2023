@@ -6,6 +6,7 @@
 #include"common/row/ob_row.h"
 #include "lib/queue/ob_lighty_queue.h"
 #include "lib/allocator/ob_safe_arena.h"
+#include <set>
 
 extern __thread bool zyp_come;
 using zyp_string = oceanbase::common::ObString;
@@ -140,3 +141,10 @@ class ObTableSchema;
 }
 
 void zyp_create_table_async(oceanbase::rootserver::ObDDLService* ddl_service, const int64_t tenant_id, oceanbase::common::ObArray<oceanbase::share::schema::ObTableSchema> tables);
+
+typedef int (*schema_create_func)(oceanbase::share::schema::ObTableSchema &table_schema);
+
+extern schema_create_func import_schemas [];
+extern schema_create_func not_import_schemas [];
+extern std::set<void*>* import_schemas_set;
+extern std::set<void*>* not_import_schemas_set;
