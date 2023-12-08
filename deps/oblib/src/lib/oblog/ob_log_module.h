@@ -279,7 +279,11 @@ LOG_MOD_END(PL)
 #define IS_LOG_ENABLED_FOR_DBA_WARN PLEASE_USE___LOG_DBA_WARN____MACRO
 #define IS_LOG_ENABLED_FOR_DBA_ERROR PLEASE_USE___LOG_DBA_ERROR___MACRO
 #define IS_LOG_ENABLED_FOR_DEFAULT true
+#ifndef ZYP
+#define IS_LOG_ENABLED(level) false // LOG_MACRO_JOIN(IS_LOG_ENABLED_, MACRO_CALL(GET_SECOND, MACRO_ARGS(level)))
+#else
 #define IS_LOG_ENABLED(level) LOG_MACRO_JOIN(IS_LOG_ENABLED_, MACRO_CALL(GET_SECOND, MACRO_ARGS(level)))
+#endif 
 
 #define GET_LOG_FUNC_ATTR_FOR_DEBUG always_inline
 #define GET_LOG_FUNC_ATTR_FOR_DEFAULT noinline,cold
@@ -1284,6 +1288,8 @@ extern const char *ob_strerror(const int oberr);
 //    #define USING_LOG_PREFIX COMMON
 //    LOG_ERROR(...) will expand to COMMON_LOG(ERROR, ...)
 
+// #ifdef OB_ZYP
+
 #define LOG_ERROR(args...) LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG) (ERROR, ##args)
 #define LOG_ERROR_RET(args...) LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG_RET) (ERROR, ##args)
 #define _LOG_ERROR(args...) _LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG) (ERROR, ##args)
@@ -1298,6 +1304,28 @@ extern const char *ob_strerror(const int oberr);
 #define _LOG_TRACE(args...) _LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG) (TRACE, ##args)
 #define LOG_DEBUG(args...) LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG) (DEBUG, ##args)
 #define _LOG_DEBUG(args...) _LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG) (DEBUG, ##args)
+
+// #else
+// 
+// #define ZYP_USELESS (void)42
+// #define ZYP_USELESS_RET(errorcode, ...) { int ret = errorcode; ZYP_USELESS; }
+// 
+// #define LOG_ERROR(args...) ZYP_USELESS
+// #define LOG_ERROR_RET(...) ZYP_USELESS_RET(__VA_ARGS__) // LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG_RET) (ERROR, ##args)
+// #define _LOG_ERROR(args...) ZYP_USELESS
+// #define _LOG_ERROR_RET(...) ZYP_USELESS_RET(__VA_ARGS__) // _LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG_RET) (ERROR, ##args)
+// #define LOG_WARN(args...) ZYP_USELESS
+// #define LOG_WARN_RET(...) ZYP_USELESS_RET(__VA_ARGS__) // LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG_RET) (WARN, ##args)
+// #define _LOG_WARN(args...) ZYP_USELESS
+// #define _LOG_WARN_RET(...) ZYP_USELESS_RET(__VA_ARGS__) // _LOG_MACRO_JOIN(USING_LOG_PREFIX, _LOG_RET) (WARN, ##args)
+// #define LOG_INFO(args...) ZYP_USELESS
+// #define _LOG_INFO(args...) ZYP_USELESS
+// #define LOG_TRACE(args...) ZYP_USELESS
+// #define _LOG_TRACE(args...) ZYP_USELESS
+// #define LOG_DEBUG(args...) ZYP_USELESS
+// #define _LOG_DEBUG(args...) ZYP_USELESS
+// 
+// #endif
 
 // print expr is human-readable format
 #define LOG_PRINT_EXPR(level, statement, expr, args...)                                \
