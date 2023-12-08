@@ -68,7 +68,7 @@
 #include "close_modules/tde_security/share/ob_master_key_getter.h"
 #endif
 
-#include<share/ob_zyp.h>
+#include"share/ob_zyp.h"
 
 #include <thread>
 
@@ -816,45 +816,61 @@ int ObBootstrap::create_all_partitions()
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("check_inner_stat failed", K(ret));
   } else {
-    ObMySQLTransaction trans;
-    ObMySQLProxy &sql_proxy = ddl_service_.get_sql_proxy();
-    ObTableCreator table_creator(OB_SYS_TENANT_ID,
-                                 SCN::base_scn(),
-                                 trans);
-    if (OB_FAIL(trans.start(&sql_proxy, OB_SYS_TENANT_ID))) {
-      LOG_WARN("fail to start trans", KR(ret));
-    } else if (OB_FAIL(table_creator.init(false/*need_tablet_cnt_check*/))) {
-      LOG_WARN("fail to init tablet creator", KR(ret));
-    } else {
-      // create core table partition
-      for (int64_t i = 0; OB_SUCC(ret) && NULL != core_table_schema_creators[i]; ++i) {
-        if (OB_FAIL(prepare_create_partition(
-            table_creator, core_table_schema_creators[i]))) {
-          LOG_WARN("prepare create partition fail", K(ret));
+    ParallelRunner runner;
+    std::atomic_int core_idxs{0};
+    std::atomic_int sys_idxs{0};
+    const int core_size = sizeof(core_table_schema_creators)/sizeof(*core_table_schema_creators);
+    const int sys_size = sizeof(sys_table_schema_creators)/sizeof(*sys_table_schema_creators);
+    runner.run_parallel([&](){
+      ObMySQLTransaction trans;
+      ObMySQLProxy &sql_proxy = ddl_service_.get_sql_proxy();
+      ObTableCreator table_creator(OB_SYS_TENANT_ID,
+                                   SCN::base_scn(),
+                                   trans);
+      int ret = OB_SUCCESS;
+      if (OB_FAIL(trans.start(&sql_proxy, OB_SYS_TENANT_ID))) {
+        LOG_WARN("fail to start trans", KR(ret));
+      } else if (OB_FAIL(table_creator.init(false/*need_tablet_cnt_check*/))) {
+        LOG_WARN("fail to init tablet creator", KR(ret));
+      } else {
+        auto create=[&](schema_create_func func) {
+          if(func!=nullptr) return prepare_create_partition(table_creator, func);
+          return OB_SUCCESS;
+        };
+        while(core_idxs < core_size) {
+          int now = core_idxs++;
+          if(now<core_size) {
+            if(OB_FAIL(create(core_table_schema_creators[now]))) {
+              LOG_WARN("prepare create partition fail", K(ret));
+            }
+          }
+          else break;
+        }
+        while(sys_idxs < sys_size) {
+          int now = sys_idxs++;
+          if(now<sys_size) {
+            if(OB_FAIL(create(sys_table_schema_creators[now]))) {
+              LOG_WARN("prepare create partition fail", K(ret));
+            }
+          }
+          else break;
         }
       }
-      // create sys table partition
-      for (int64_t i = 0; OB_SUCC(ret) && NULL != sys_table_schema_creators[i]; ++i) {
-        if (OB_FAIL(prepare_create_partition(
-            table_creator, sys_table_schema_creators[i]))) {
-          LOG_WARN("prepare create partition fail", K(ret));
-        }
-      }
-      // execute creating tablet
       if (OB_SUCC(ret)) {
         if (OB_FAIL(table_creator.execute())) {
           LOG_WARN("execute create partition failed", K(ret));
         }
       }
-    }
-    if (trans.is_started()) {
-      int temp_ret = OB_SUCCESS;
-      bool commit = OB_SUCC(ret);
-      if (OB_SUCCESS != (temp_ret = trans.end(commit))) {
-        ret = (OB_SUCC(ret)) ? temp_ret : ret;
-        LOG_WARN("trans end failed", K(commit), K(temp_ret));
+      if (trans.is_started()) {
+        int temp_ret = OB_SUCCESS;
+        bool commit = OB_SUCC(ret);
+        if (OB_SUCCESS != (temp_ret = trans.end(commit))) {
+          ret = (OB_SUCC(ret)) ? temp_ret : ret;
+          LOG_WARN("trans end failed", K(commit), K(temp_ret));
+        }
       }
-    }
+    }, [&](){ return core_idxs<core_size||sys_idxs<sys_size; });
+      // execute creating tablet
   }
 
   LOG_INFO("finish creating system tables", K(ret));
