@@ -278,22 +278,8 @@ void zyp_create_table_async(obrpc::ObSrvRpcProxy* rpc_proxy,oceanbase::obrpc::Ob
   OB_DELETE(ObDDLSQLTransaction, "create_table", sql_client);
 }
 
-std::set<void*>* import_schemas_set;
-std::set<void*>* not_import_schemas_set;
-
 __attribute__((constructor)) void init() {
-  import_schemas_set = new std::set<void*>;
-  not_import_schemas_set = new std::set<void*>;
   zyp_fd = open("/home/zhaoyiping/logs/zyp_log", O_CREAT|O_WRONLY|O_TRUNC, 0644);
-  std::thread tmp_thread([](){
-    for(schema_create_func* tmp=not_import_schemas;*tmp;tmp++) {
-      not_import_schemas_set->insert((void*)*tmp);
-    }
-    for(schema_create_func* tmp=import_schemas;*tmp;tmp++) {
-      import_schemas_set->insert((void*)*tmp);
-    }
-  });
-  tmp_thread.detach();
 }
 __attribute__((destructor)) void fini() {
   if(zyp_fd!=-1) close(zyp_fd);

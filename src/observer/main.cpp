@@ -65,7 +65,10 @@ unsigned int (*glibc_sleep)(unsigned int);
 unsigned int (*glibc_usleep)(useconds_t);
 int (*glibc_nanosleep)(const struct timespec *req, struct timespec *rem);
 const int div_times = 64;
+int begin_time;
+bool hook_enable = true;
 __attribute__((constructor)) void hook_init() {
+  begin_time = time(nullptr);
   libc_hdl = dlopen(LIBC_NAME, RTLD_LAZY | RTLD_NOLOAD);
   *(void**)&glibc_sleep = dlsym(libc_hdl, "sleep");;
   *(void**)&glibc_usleep = dlsym(libc_hdl, "usleep");;
@@ -73,18 +76,36 @@ __attribute__((constructor)) void hook_init() {
   puts("hook_init");
 }
 int usleep(useconds_t microseconds){
-  return glibc_usleep(microseconds/div_times);
+  if(hook_enable) {
+    if(time(nullptr)-begin_time>10) {
+      hook_enable = false;
+    }
+  }
+  if(hook_enable) {
+    return glibc_usleep(microseconds/div_times);
+  } else {
+    return glibc_usleep(microseconds);
+  }
 }
 unsigned int sleep(unsigned int seconds) {
   return usleep(seconds*1000);
 }
 int nanosleep(const struct timespec *req, struct timespec *rem) {
-  long long tmp = req->tv_sec*1000000000ll + req->tv_nsec;
-  tmp/=div_times;
-  struct timespec req1;
-  req1.tv_sec = tmp/1000000000;
-  req1.tv_nsec = tmp%1000000000;
-  return glibc_nanosleep(&req1, rem);
+  if(hook_enable) {
+    if(time(nullptr)-begin_time>10) {
+      hook_enable = false;
+    }
+  }
+  if(hook_enable) {
+    long long tmp = req->tv_sec*1000000000ll + req->tv_nsec;
+    tmp/=div_times;
+    struct timespec req1;
+    req1.tv_sec = tmp/1000000000;
+    req1.tv_nsec = tmp%1000000000;
+    return glibc_nanosleep(&req1, rem);
+  } else {
+    return glibc_nanosleep(req, rem);
+  }
 }
 }
 

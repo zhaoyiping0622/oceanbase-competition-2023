@@ -148,5 +148,3 @@ typedef int (*schema_create_func)(oceanbase::share::schema::ObTableSchema &table
 
 extern schema_create_func import_schemas [];
 extern schema_create_func not_import_schemas [];
-extern std::set<void*>* import_schemas_set;
-extern std::set<void*>* not_import_schemas_set;

@@ -828,14 +828,14 @@ int ObBootstrap::create_all_partitions()
     } else {
       // create core table partition
       for (int64_t i = 0; OB_SUCC(ret) && NULL != core_table_schema_creators[i]; ++i) {
-        if (import_schemas_set->count((void*)(core_table_schema_creators[i])) && OB_FAIL(prepare_create_partition(
+        if (OB_FAIL(prepare_create_partition(
             table_creator, core_table_schema_creators[i]))) {
           LOG_WARN("prepare create partition fail", K(ret));
         }
       }
       // create sys table partition
       for (int64_t i = 0; OB_SUCC(ret) && NULL != sys_table_schema_creators[i]; ++i) {
-        if (import_schemas_set->count((void*)(sys_table_schema_creators[i])) && OB_FAIL(prepare_create_partition(
+        if (OB_FAIL(prepare_create_partition(
             table_creator, sys_table_schema_creators[i]))) {
           LOG_WARN("prepare create partition fail", K(ret));
         }
