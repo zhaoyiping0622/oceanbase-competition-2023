@@ -67,7 +67,11 @@ inline void reload_diagnose_info_config(const bool enable_diagnose_info)
 
 inline bool is_trace_log_enabled()
 {
+#ifndef ZYP
+  return false;
+#else
   return ObLibConfig::enable_trace_log_ && !ObPerfModeGuard::in_disable_diagnose_guard_;
+#endif
 }
 
 inline void reload_trace_log_config(const bool enable_trace_log)

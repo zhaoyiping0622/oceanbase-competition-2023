@@ -335,6 +335,7 @@ void UserMdsNode<K, V>::report_event_(const char (&event_str)[N],
                                       const uint32_t line,
                                       const char *function_name) const
 {
+  return;
   int ret = OB_SUCCESS;
   constexpr int64_t buffer_size = 1_KB;
   char stack_buffer[buffer_size] = { 0 };
