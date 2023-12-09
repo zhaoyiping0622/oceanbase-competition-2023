@@ -540,15 +540,11 @@ int TableBatchCreateByPass::run() {
 }
 
 void TableBatchCreateByPass::init_core_all_table_idx() {
-  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME, *global_client_, tenant_id_);
-  kv.load();
-  core_all_table_idx_ = kv.row_count()+1;
+  core_all_table_idx_ = 1+1;
 }
 
 void TableBatchCreateByPass::init_core_all_column_idx() {
-  ObCoreTableProxy kv(OB_ALL_COLUMN_TNAME, *global_client_, tenant_id_);
-  kv.load();
-  core_all_column_idx_ = kv.row_count()+1;
+  core_all_column_idx_ = 6+1;
 }
 
 std::atomic_long& TableBatchCreateByPass::get_core_all_table_idx() {
