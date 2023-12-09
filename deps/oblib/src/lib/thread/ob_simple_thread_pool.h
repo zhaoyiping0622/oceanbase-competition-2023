@@ -64,7 +64,7 @@ private:
 class ObSimpleThreadPool
     : public lib::ThreadPool
 {
-  static const int64_t QUEUE_WAIT_TIME = 100 * 1000;
+  static const int64_t QUEUE_WAIT_TIME = 10 * 1000;
   static const int64_t MAX_THREAD_NUM = 256;
 public:
   ObSimpleThreadPool();
