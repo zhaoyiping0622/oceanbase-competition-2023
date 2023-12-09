@@ -1430,7 +1430,6 @@ int ObInnerSQLConnection::execute_proc(const uint64_t tenant_id,
 int ObInnerSQLConnection::execute_write_inner(const uint64_t tenant_id, const ObString &sql,
     int64_t &affected_rows, bool is_user_sql, const common::ObAddr *sql_exec_addr)
 {
-  LOG_INFO("zyp execute sql", K(sql));
   int ret = OB_SUCCESS;
   FLTSpanGuard(inner_execute_write);
   ObSqlQueryExecutor executor(sql);
