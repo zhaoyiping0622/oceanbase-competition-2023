@@ -73,7 +73,7 @@ void ObCommonLSService::do_work()
   } else if (OB_FAIL(wait_tenant_schema_and_version_ready_(tenant_id_, DATA_VERSION_4_1_0_0))) {
     LOG_WARN("failed to wait tenant schema version ready", KR(ret), K(tenant_id_), K(DATA_CURRENT_VERSION));
   } else {
-    int64_t idle_time_us = 1000 * 1000L;//1s
+    int64_t idle_time_us = 100 * 1000L;//1s
     share::schema::ObTenantSchema user_tenant_schema;
     int tmp_ret = OB_SUCCESS;
     while (!has_set_stop()) {
