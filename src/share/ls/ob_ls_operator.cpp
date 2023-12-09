@@ -379,15 +379,9 @@ int ObLSAttrOperator::insert_ls(
             ls_status_to_str(ls_attr.get_ls_status()), flag_str.ptr(),
             ls_attr.get_create_scn().get_val_for_inner_table_field()))) {
       LOG_WARN("failed to assign sql", KR(ret), K(ls_attr), K(sql));
-    } else if (OB_ISNULL(trans)) {
-      if (OB_FAIL(operator_ls_(ls_attr, sql, working_sw_status))) {
+    } else if (OB_FAIL(operator_ls_(ls_attr, sql, working_sw_status))) {
         LOG_WARN("failed to operator ls", KR(ret), K(ls_attr), K(sql));
-      }
-    } else {
-      if (OB_FAIL(operator_ls_in_trans_(ls_attr, sql, working_sw_status, *trans))) {
-        LOG_WARN("failed to operator ls", KR(ret), K(ls_attr), K(sql));
-      }
-    } 
+    }
   }
   LOG_INFO("[LS_OPERATOR] insert ls", KR(ret), K(ls_attr), K(sql));
   ALL_LS_EVENT_ADD(tenant_id_, ls_attr.get_ls_id(), "insert_ls", ret, sql);
