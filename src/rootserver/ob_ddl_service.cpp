@@ -23180,8 +23180,8 @@ int ObDDLService::init_tenant_schema(
         LOG_WARN("fail to get sys ls info by operator", KR(ret), K(tenant_id));
       } else if (OB_FAIL(sys_ls_info.get_paxos_member_addrs(addrs))) {
         LOG_WARN("fail to get paxos member addrs", K(ret), K(tenant_id), K(sys_ls_info));
-      } else if (OB_FAIL(publish_schema(tenant_id, addrs))) {
-        LOG_WARN("fail to publish schema", KR(ret), K(tenant_id), K(addrs));
+      // } else if (OB_FAIL(publish_schema(tenant_id, addrs))) {
+      //   LOG_WARN("fail to publish schema", KR(ret), K(tenant_id), K(addrs));
       }
     }
 
