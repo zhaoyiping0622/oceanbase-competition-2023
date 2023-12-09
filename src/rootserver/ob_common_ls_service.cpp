@@ -63,6 +63,8 @@ void ObCommonLSService::destroy()
 
 void ObCommonLSService::do_work()
 {
+  LOG_INFO("in ObCommonLSService::do_work");
+  DEFER({LOG_INFO("out ObCommonLSService::do_work");});
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(!inited_)) {
     ret = OB_NOT_INIT;
@@ -79,8 +81,11 @@ void ObCommonLSService::do_work()
     while (!has_set_stop()) {
       ret = OB_SUCCESS;
       ObCurTraceId::init(GCONF.self_addr_);
-      if (is_meta_tenant(tenant_id_)) {
-        const uint64_t user_tenant_id = gen_user_tenant_id(tenant_id_);
+      if ((is_meta_tenant(tenant_id_) || is_sys_tenant(tenant_id_)) && tenant_id_ != 1001) {
+        uint64_t user_tenant_id = gen_user_tenant_id(tenant_id_);
+        if(is_sys_tenant(tenant_id_)) {
+          user_tenant_id = 1002;
+        }
         if (OB_FAIL(check_can_do_recovery_(user_tenant_id))) {
           LOG_WARN("can not do recovery now", KR(ret), K(user_tenant_id));
         } else if (OB_FAIL(get_tenant_schema(user_tenant_id, user_tenant_schema))) {
