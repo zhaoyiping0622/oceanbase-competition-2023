@@ -1182,7 +1182,6 @@ public:
   static int all_virtual_dbms_lock_allocated_real_agent_ora_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_wr_control_ora_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_tenant_event_history_ora_schema(share::schema::ObTableSchema &table_schema);
-  static int all_virtual_ls_real_agent_ora_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_flt_config_ora_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_tenant_scheduler_job_run_detail_real_agent_ora_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_tenant_scheduler_job_class_real_agent_ora_schema(share::schema::ObTableSchema &table_schema);
@@ -3612,7 +3611,6 @@ const schema_create_func virtual_table_schema_creators [] = {
   ObInnerTableSchema::all_virtual_dbms_lock_allocated_real_agent_ora_schema,
   ObInnerTableSchema::all_virtual_wr_control_ora_schema,
   ObInnerTableSchema::all_virtual_tenant_event_history_ora_schema,
-  ObInnerTableSchema::all_virtual_ls_real_agent_ora_schema,
   ObInnerTableSchema::all_virtual_flt_config_ora_schema,
   ObInnerTableSchema::all_virtual_tenant_scheduler_job_run_detail_real_agent_ora_schema,
   ObInnerTableSchema::all_virtual_tenant_scheduler_job_class_real_agent_ora_schema,
@@ -4955,6 +4953,7 @@ const uint64_t tenant_space_tables [] = {
   OB_ALL_VIRTUAL_LS_LOG_ARCHIVE_PROGRESS_TID,
   OB_ALL_VIRTUAL_BACKUP_STORAGE_INFO_TID,
   OB_ALL_VIRTUAL_LS_STATUS_TID,
+  OB_ALL_VIRTUAL_LS_TID,
   OB_ALL_VIRTUAL_LS_META_TABLE_TID,
   OB_ALL_VIRTUAL_TABLET_META_TABLE_TID,
   OB_ALL_VIRTUAL_BACKUP_TASK_TID,
@@ -5289,7 +5288,6 @@ const uint64_t tenant_space_tables [] = {
   OB_ALL_VIRTUAL_DBMS_LOCK_ALLOCATED_REAL_AGENT_ORA_TID,
   OB_ALL_VIRTUAL_WR_CONTROL_ORA_TID,
   OB_ALL_VIRTUAL_TENANT_EVENT_HISTORY_ORA_TID,
-  OB_ALL_VIRTUAL_LS_REAL_AGENT_ORA_TID,
   OB_ALL_VIRTUAL_FLT_CONFIG_ORA_TID,
   OB_ALL_VIRTUAL_TENANT_SCHEDULER_JOB_RUN_DETAIL_REAL_AGENT_ORA_TID,
   OB_ALL_VIRTUAL_TENANT_SCHEDULER_JOB_CLASS_REAL_AGENT_ORA_TID,
@@ -7264,6 +7262,7 @@ const char* const tenant_space_table_names [] = {
   OB_ALL_VIRTUAL_LS_LOG_ARCHIVE_PROGRESS_TNAME,
   OB_ALL_VIRTUAL_BACKUP_STORAGE_INFO_TNAME,
   OB_ALL_VIRTUAL_LS_STATUS_TNAME,
+  OB_ALL_VIRTUAL_LS_TNAME,
   OB_ALL_VIRTUAL_LS_META_TABLE_TNAME,
   OB_ALL_VIRTUAL_TABLET_META_TABLE_TNAME,
   OB_ALL_VIRTUAL_BACKUP_TASK_TNAME,
@@ -7598,7 +7597,6 @@ const char* const tenant_space_table_names [] = {
   OB_ALL_VIRTUAL_DBMS_LOCK_ALLOCATED_REAL_AGENT_ORA_TNAME,
   OB_ALL_VIRTUAL_WR_CONTROL_ORA_TNAME,
   OB_ALL_VIRTUAL_TENANT_EVENT_HISTORY_ORA_TNAME,
-  OB_ALL_VIRTUAL_LS_REAL_AGENT_ORA_TNAME,
   OB_ALL_VIRTUAL_FLT_CONFIG_ORA_TNAME,
   OB_ALL_VIRTUAL_TENANT_SCHEDULER_JOB_RUN_DETAIL_REAL_AGENT_ORA_TNAME,
   OB_ALL_VIRTUAL_TENANT_SCHEDULER_JOB_CLASS_REAL_AGENT_ORA_TNAME,
@@ -11525,11 +11523,11 @@ static inline int get_sys_table_lob_aux_schema(const uint64_t tid,
 
 const int64_t OB_CORE_TABLE_COUNT = 4;
 const int64_t OB_SYS_TABLE_COUNT = 257;
-const int64_t OB_VIRTUAL_TABLE_COUNT = 738;
+const int64_t OB_VIRTUAL_TABLE_COUNT = 737;
 const int64_t OB_SYS_VIEW_COUNT = 786;
-const int64_t OB_SYS_TENANT_TABLE_COUNT = 1786;
+const int64_t OB_SYS_TENANT_TABLE_COUNT = 1785;
 const int64_t OB_CORE_SCHEMA_VERSION = 1;
-const int64_t OB_BOOTSTRAP_SCHEMA_VERSION = 1789;
+const int64_t OB_BOOTSTRAP_SCHEMA_VERSION = 1788;
 
 } // end namespace share
 } // end namespace oceanbase

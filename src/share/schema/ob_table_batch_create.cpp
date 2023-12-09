@@ -383,6 +383,7 @@ TableBatchCreateByPass::TableBatchCreateByPass(common::ObIArray<ObTableSchema>& 
     LOG_INFO("tables is empty");
     return;
   }
+  LOG_INFO("create table bypass init", K(tables_.count()));
   tenant_id_ = tables_.at(0).get_tenant_id();
   exec_tenant_id_ = ObSchemaUtils::get_exec_tenant_id(tenant_id_);
   global_client_ = client_start_();

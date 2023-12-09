@@ -1310,7 +1310,7 @@ int ObInnerTableSchema::all_virtual_ash_all_virtual_ash_i1_schema(ObTableSchema 
       sql_id_default,
       sql_id_default, //default_value
       false, //is_hidden
-      true); //is_storing_column
+      true); //is_storing_column 
   }
 
   if (OB_SUCC(ret)) {
@@ -1331,7 +1331,7 @@ int ObInnerTableSchema::all_virtual_ash_all_virtual_ash_i1_schema(ObTableSchema 
       trace_id_default,
       trace_id_default, //default_value
       false, //is_hidden
-      true); //is_storing_column
+      true); //is_storing_column 
   }
 
   if (OB_SUCC(ret)) {
@@ -1658,7 +1658,7 @@ int ObInnerTableSchema::all_virtual_ash_all_virtual_ash_i1_schema(ObTableSchema 
       is_wr_sample_default,
       is_wr_sample_default, //default_value
       false, //is_hidden
-      true); //is_storing_column
+      true); //is_storing_column 
   }
 
   if (OB_SUCC(ret)) {
@@ -1679,7 +1679,7 @@ int ObInnerTableSchema::all_virtual_ash_all_virtual_ash_i1_schema(ObTableSchema 
       time_model_default,
       time_model_default, //default_value
       false, //is_hidden
-      true); //is_storing_column
+      true); //is_storing_column 
   }
 
   if (OB_SUCC(ret)) {

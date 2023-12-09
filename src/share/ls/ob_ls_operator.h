@@ -276,8 +276,7 @@ class ObLSAttrOperator : public ObLSTemplateOperator
 {
 public:
   ObLSAttrOperator(const uint64_t tenant_id,
-                   common::ObMySQLProxy *proxy) :
-                      tenant_id_(tenant_id), proxy_(proxy) {};
+                   common::ObMySQLProxy *proxy);
   virtual ~ObLSAttrOperator(){}
 
   TO_STRING_KV(K_(tenant_id), KP_(proxy));
@@ -368,6 +367,7 @@ private:
                    ObMySQLTransaction &trans);
 private:
   uint64_t tenant_id_;
+  uint64_t exec_tenant_id_;
   common::ObMySQLProxy *proxy_;
 };
 }

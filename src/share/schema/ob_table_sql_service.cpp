@@ -2449,6 +2449,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
       if(is_core_table(table.get_table_id())) core_tables.push_back(tables.at(i));
     }
   }
+  LOG_INFO("create_table_batch", K(core_tables.count()));
+  LOG_INFO("create_table_batch", K(tables.count()));
+  LOG_INFO("create_table_batch", K(view_tables.count()));
   oceanbase::schema::TableBatchCreateByPass core(core_tables, client_start, client_end);
   oceanbase::schema::TableBatchCreateByPass other(tables, client_start, client_end);
   oceanbase::schema::TableBatchCreateNormal view(view_tables, client_start, client_end, this);

@@ -3656,11 +3656,13 @@ def_table_schema(
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
+    ('tenant_id', 'int'),
     ('ls_id', 'int'),
   ],
 
   in_tenant_space = True,
-  is_cluster_private = False,
+  is_cluster_private = True,
+  meta_record_in_sys = True,
 
   normal_columns = [
     ('ls_group_id', 'int'),
@@ -10866,9 +10868,10 @@ def_table_schema(**gen_iterate_private_virtual_table_def(
   in_tenant_space = True,
   keywords = all_def_keywords['__all_ls_status']))
 
-def_table_schema(**gen_iterate_virtual_table_def(
+def_table_schema(**gen_iterate_private_virtual_table_def(
   table_id = '12238',
   table_name = '__all_virtual_ls',
+  in_tenant_space = True,
   keywords = all_def_keywords['__all_ls']))
 
 def_table_schema(**gen_iterate_private_virtual_table_def(
@@ -13399,7 +13402,7 @@ def_table_schema(**gen_oracle_mapping_virtual_table_def('15399', all_def_keyword
 
 # 15401: __all_virtual_data_activity_metrics
 
-def_table_schema(**gen_oracle_mapping_real_virtual_table_def('15402', all_def_keywords['__all_ls']))
+# def_table_schema(**gen_oracle_mapping_real_virtual_table_def('15402', all_def_keywords['__all_ls']))
 # 15403: __all_virtual_flt_config
 def_table_schema(**no_direct_access(gen_oracle_mapping_virtual_table_def('15403', all_def_keywords['__all_virtual_flt_config'])))
 

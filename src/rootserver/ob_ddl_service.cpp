@@ -22696,6 +22696,7 @@ int ObDDLService::create_tenant_user_ls(const uint64_t tenant_id)
   } else if (OB_FAIL(ObRootUtils::get_rs_default_timeout_ctx(ctx))) {
     LOG_WARN("fail to get timeout ctx", KR(ret), K(ctx));
   } else {
+    LOG_INFO("ObDDLService::create_tenant_user_ls");
     ObAddr leader;
     int64_t tmp_ret = OB_SUCCESS;
     //ignore failed
@@ -22778,7 +22779,7 @@ int ObDDLService::create_tenant_sys_ls(
         LOG_WARN("fail to wait election leader", KR(ret), K(tenant_id), K(SYS_LS), K(timeout));
       }
       int64_t wait_leader_end = ObTimeUtility::current_time();
-      wait_leader = wait_leader_end - wait_leader_end;
+      wait_leader = wait_leader_end - wait_leader_start;
     }
   }
   if (is_meta_tenant(tenant_id)) {
@@ -23110,6 +23111,8 @@ int ObDDLService::init_tenant_schema(
       }
     }
 
+    LOG_INFO("init_tenant_schema step 1 succeeded");
+
     // 2. init tenant schema
     if (OB_SUCC(ret)) {
       ObDDLSQLTransaction trans(schema_service_, true, true, false, false);
@@ -23169,6 +23172,8 @@ int ObDDLService::init_tenant_schema(
         }
       }
 
+      LOG_INFO("init_tenant_schema step 2 succeeded");
+
       ObLSInfo sys_ls_info;
       ObAddrArray addrs;
       if (FAILEDx(GCTX.lst_operator_->get(
@@ -23185,6 +23190,8 @@ int ObDDLService::init_tenant_schema(
       }
     }
 
+    LOG_INFO("init_tenant_schema step 2 succeeded");
+
     // 3. set baseline schema version
     if (OB_SUCC(ret)) {
       ObGlobalStatProxy global_stat_proxy(*sql_proxy_, tenant_id);
@@ -23200,6 +23207,8 @@ int ObDDLService::init_tenant_schema(
       }
     }
   }
+
+  LOG_INFO("init_tenant_schema step 3 succeeded");
 
   LOG_INFO("[CREATE_TENANT] STEP 2.4. finish init tenant schemas", KR(ret), K(tenant_id),
            "cost", ObTimeUtility::fast_current_time() - start_time);
