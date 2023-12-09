@@ -2422,10 +2422,21 @@ int ObTableSqlService::delete_single_column(
 int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &tables,
                            std::function<ObISQLClient*()> client_start,
                            std::function<void(ObISQLClient*)> client_end) {
-  LOG_INFO("create_table_batch begin");
+  static std::atomic_int enter_count{0};
+  static std::atomic_int leave_count{0};
+  ObArray<ObString> table_names;
+  table_names.prepare_allocate(tables.count());
+  for(int i=0;i<tables.count();i++)table_names[i]=tables.at(i).get_table_name();
+  LOG_INFO("create_table_batch begin", K(table_names));
+  // LOG_INFO("create_table_batch begin");
   DEFER({LOG_INFO("create_table_batch end");});
-  local_allocator_gc_.init(10000);
+  int t = enter_count++;
+  if(t<=2) {
+    local_allocator_gc_.init(10000);
+  }
   DEFER({ 
+    int t = leave_count++;
+    if(t==2) return;
     ZypAllocator *p;
     int ret = OB_SUCCESS;
     while(OB_SUCC(local_allocator_gc_.pop(*(void**)&p))) {

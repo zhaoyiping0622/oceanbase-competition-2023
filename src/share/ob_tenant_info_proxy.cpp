@@ -38,6 +38,10 @@ namespace oceanbase
 namespace share
 {
 
+static uint64_t gen_meta_tenant_id(uint64_t tenant_id) {
+  return OB_SYS_TENANT_ID;
+}
+
 bool is_valid_tenant_scn(
   const SCN &sync_scn,
   const SCN &replayable_scn,

@@ -131,6 +131,7 @@ public:
    * */
   static uint64_t get_exec_tenant_id(const uint64_t tenant_id)
   {
+    return OB_SYS_TENANT_ID;
     return get_private_table_exec_tenant_id(tenant_id);
   }
 
@@ -280,7 +281,7 @@ static int func_name(__VA_ARGS__, ObISQLClient *proxy);
 #define TAKE_IN_TRANS(func_name, proxy, exec_tenant_id, ...)\
 do {\
   ObMySQLTransaction trans; \
-  if (FAILEDx(trans.start(proxy, exec_tenant_id))) {\
+  if (FAILEDx(trans.start(proxy, OB_SYS_TENANT_ID))) {\
     SHARE_LOG(WARN, "failed to start trans", KR(ret), K(exec_tenant_id));\
   } else if (OB_FAIL(func_name##_in_trans(__VA_ARGS__, trans))) {\
     SHARE_LOG(WARN, "failed to do it in trans", KR(ret));\
