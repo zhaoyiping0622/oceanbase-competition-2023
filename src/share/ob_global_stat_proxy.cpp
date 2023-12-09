@@ -29,6 +29,69 @@ namespace share
 {
 const char *ObGlobalStatProxy::TENANT_ID_CNAME = "tenant_id";
 
+#define SET_ITEM(name, value, is_incremental) \
+  do { \
+    ObGlobalStatItem::ItemList list; \
+    ObGlobalStatItem item(list, name, value); \
+    if (OB_FAIL(update(list, is_incremental))) { \
+      LOG_WARN("update failed", K(list), K(ret)); \
+    } \
+  } while (false)
+
+#define GlobalStatCacheHashMapName(name) name##_hash_map
+#define GlobalStatCacheHashNotExistValue(name) -1
+#define GlobalStatCache(name, type) static hash::ObHashMap<uint64_t, type> GlobalStatCacheHashMapName(name)
+#define GlobalStatCacheIncreamentUpdate(name, type, v) \
+  do {\
+    auto zyp_update = HashMapIncreamentUpdate<type>(v);\
+    if(OB_UNLIKELY(OB_FAIL(GlobalStatCacheHashMapName(name).set_or_update(tenant_id_, \
+              GlobalStatCacheHashNotExistValue(name), zyp_update)))) { \
+      if (ret == OB_NOT_INIT) { \
+        GlobalStatCacheHashMapName(name).create(97, ObModIds::OB_HASH_BUCKET); \
+        GlobalStatCacheHashMapName(name).set_or_update(tenant_id_, \
+            GlobalStatCacheHashNotExistValue(name), zyp_update); \
+      } \
+    } \
+  } while(0)
+
+#define GlobalStatCacheUpdate(name, type, v) \
+  do {\
+    auto zyp_update = HashMapSet<type>(v);\
+    if(OB_UNLIKELY(OB_FAIL(GlobalStatCacheHashMapName(name).atomic_refactored(tenant_id_, zyp_update)))) { \
+      if (ret == OB_NOT_INIT) { \
+        GlobalStatCacheHashMapName(name).create(97, ObModIds::OB_HASH_BUCKET); \
+        GlobalStatCacheHashMapName(name).atomic_refactored(tenant_id_, zyp_update); \
+      } \
+    } \
+  } while(0)
+
+#define GlobalStatCacheGet(name) GlobalStatCacheHashMapName(name).get(tenant_id_)
+
+template<typename T>
+class HashMapSet {
+public:
+  HashMapSet(T v):v_(v) {}
+  void operator()(hash::HashMapPair<uint64_t, T> &v) {
+    v.second=v_;
+  }
+private:
+  T v_;
+};
+
+template<typename T>
+class HashMapIncreamentUpdate {
+public:
+  HashMapIncreamentUpdate(T v):v_(v) {}
+  void operator()(hash::HashMapPair<uint64_t, T> &v) {
+    if(v.second<v_) v.second=v_;
+  }
+private:
+  T v_;
+};
+
+GlobalStatCache(core_schema_version, int64_t);
+GlobalStatCache(baseline_schema_version, int64_t);
+
 int ObGlobalStatProxy::set_init_value(
     const int64_t core_schema_version,
     const int64_t baseline_schema_version,
@@ -60,6 +123,9 @@ int ObGlobalStatProxy::set_init_value(
 
     if (OB_FAIL(update(list))) {
       LOG_WARN("update failed", KR(ret), K(list));
+    } else {
+      GlobalStatCacheUpdate(core_schema_version, int64_t, core_schema_version);
+      GlobalStatCacheUpdate(baseline_schema_version, int64_t, baseline_schema_version);
     }
   }
   return ret;
@@ -95,21 +161,14 @@ int ObGlobalStatProxy::set_tenant_init_global_stat(
     ObGlobalStatItem snapshot_gc_scn_item(list, "snapshot_gc_scn", snapshot_gc_scn.get_val_for_inner_table_field());
     if (OB_FAIL(update(list))) {
       LOG_WARN("update failed", KR(ret), K(list));
+    } else {
+      GlobalStatCacheUpdate(core_schema_version, int64_t, core_schema_version);
+      GlobalStatCacheUpdate(baseline_schema_version, int64_t, baseline_schema_version);
     }
   }
   return ret;
 }
 
-#define SET_ITEM(name, value, is_incremental) \
-  do { \
-    ObGlobalStatItem::ItemList list; \
-    ObGlobalStatItem item(list, name, value); \
-    if (OB_FAIL(update(list, is_incremental))) { \
-      LOG_WARN("update failed", K(list), K(ret)); \
-    } \
-  } while (false)
-
-static hash::ObHashMap<uint64_t, int64_t> core_schema_version_hash_map;
 class HashMapUpdate {
 public:
   HashMapUpdate(int64_t v):v_(v) {}
@@ -124,19 +183,16 @@ ObGlobalStatProxy::ObGlobalStatProxy(common::ObISQLClient &client,
     : core_table_(OB_ALL_GLOBAL_STAT_TNAME, client, tenant_id), tenant_id_(tenant_id)
 {
   int ret = OB_SUCCESS;
-  auto update = HashMapUpdate(1);
-  if(OB_UNLIKELY(OB_FAIL(core_schema_version_hash_map.set_or_update(tenant_id_, 1, update)))) {
-    if(ret == OB_NOT_INIT) {
-      core_schema_version_hash_map.create(97, ObModIds::OB_HASH_BUCKET);
-    }
-    core_schema_version_hash_map.set_or_update(tenant_id_, 1, update);
-  }
+  GlobalStatCacheIncreamentUpdate(core_schema_version, int64_t, 
+      GlobalStatCacheHashNotExistValue(core_schema_version));
+  GlobalStatCacheIncreamentUpdate(baseline_schema_version, int64_t, 
+      GlobalStatCacheHashNotExistValue(baseline_schema_version));
 }
 
 int ObGlobalStatProxy::set_core_schema_version(const int64_t core_schema_version)
 {
   int ret = OB_SUCCESS;
-  auto* tmp = core_schema_version_hash_map.get(tenant_id_);
+  auto* tmp = GlobalStatCacheGet(core_schema_version);
   if(tmp!=nullptr&&*tmp>=core_schema_version) return OB_SUCCESS;
   if (!is_valid() || core_schema_version <= 0) {
     ret = OB_INVALID_ARGUMENT;
@@ -144,8 +200,7 @@ int ObGlobalStatProxy::set_core_schema_version(const int64_t core_schema_version
   } else {
     bool is_incremental = true;
     SET_ITEM("core_schema_version", core_schema_version, is_incremental);
-    auto update = HashMapUpdate(core_schema_version);
-    core_schema_version_hash_map.atomic_refactored(tenant_id_, update);
+    GlobalStatCacheIncreamentUpdate(core_schema_version, int64_t, core_schema_version);
   }
   return ret;
 }
@@ -153,12 +208,15 @@ int ObGlobalStatProxy::set_core_schema_version(const int64_t core_schema_version
 int ObGlobalStatProxy::set_baseline_schema_version(const int64_t baseline_schema_version)
 {
   int ret = OB_SUCCESS;
+  auto* tmp = GlobalStatCacheGet(baseline_schema_version);
+  if(tmp!=nullptr&&*tmp>=baseline_schema_version) return OB_SUCCESS;
   if (!is_valid() || baseline_schema_version < -1) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), "self valid", is_valid(), K(baseline_schema_version));
   } else {
     bool is_incremental = true;
     SET_ITEM("baseline_schema_version", baseline_schema_version, is_incremental);
+    GlobalStatCacheIncreamentUpdate(baseline_schema_version, int64_t, baseline_schema_version);
   }
   return ret;
 }
@@ -409,9 +467,9 @@ int ObGlobalStatProxy::update(const ObGlobalStatItem::ItemList &list,
 int ObGlobalStatProxy::get_core_schema_version(int64_t &core_schema_version)
 {
   int ret = OB_SUCCESS;
-  auto* tmp = core_schema_version_hash_map.get(tenant_id_);
-  if(tmp!=nullptr&&*tmp!=1) {
-    core_schema_version=*tmp;
+  auto* tmp = GlobalStatCacheGet(core_schema_version);
+  if(tmp!=nullptr&&*tmp!=GlobalStatCacheHashNotExistValue(core_schema_version)) {
+    core_schema_version = *tmp;
     return ret;
   }
   ObGlobalStatItem::ItemList list;
@@ -423,6 +481,7 @@ int ObGlobalStatProxy::get_core_schema_version(int64_t &core_schema_version)
     LOG_WARN("get failed", K(ret));
   } else {
     core_schema_version = core_schema_version_item.value_;
+    GlobalStatCacheIncreamentUpdate(core_schema_version, int64_t, core_schema_version);
   }
   return ret;
 }
@@ -430,6 +489,11 @@ int ObGlobalStatProxy::get_core_schema_version(int64_t &core_schema_version)
 int ObGlobalStatProxy::get_baseline_schema_version(int64_t &baseline_schema_version)
 {
   int ret = OB_SUCCESS;
+  auto* tmp = GlobalStatCacheGet(baseline_schema_version);
+  if(tmp!=nullptr&&*tmp!=GlobalStatCacheHashNotExistValue(baseline_schema_version)) {
+    baseline_schema_version = *tmp;
+    return ret;
+  }
   ObGlobalStatItem::ItemList list;
   ObGlobalStatItem baseline_schema_version_item(list, "baseline_schema_version", baseline_schema_version);
   if (!is_valid()) {
@@ -439,6 +503,7 @@ int ObGlobalStatProxy::get_baseline_schema_version(int64_t &baseline_schema_vers
     LOG_WARN("get failed", K(ret));
   } else {
     baseline_schema_version = baseline_schema_version_item.value_;
+    GlobalStatCacheIncreamentUpdate(baseline_schema_version, int64_t, baseline_schema_version);
   }
   return ret;
 }

@@ -64,8 +64,8 @@ const char* LIBC_NAME="libc.so.6";
 unsigned int (*glibc_sleep)(unsigned int);
 unsigned int (*glibc_usleep)(useconds_t);
 int (*glibc_nanosleep)(const struct timespec *req, struct timespec *rem);
-const int div_times = 64;
-int begin_time;
+const int div_times = 32;
+long long begin_time;
 bool hook_enable = true;
 __attribute__((constructor)) void hook_init() {
   begin_time = time(nullptr);
@@ -78,7 +78,7 @@ __attribute__((constructor)) void hook_init() {
 int usleep(useconds_t microseconds){
   if(hook_enable) {
     if(time(nullptr)-begin_time>10) {
-      hook_enable = false;
+      // hook_enable = false;
     }
   }
   if(hook_enable) {
@@ -93,7 +93,7 @@ unsigned int sleep(unsigned int seconds) {
 int nanosleep(const struct timespec *req, struct timespec *rem) {
   if(hook_enable) {
     if(time(nullptr)-begin_time>10) {
-      hook_enable = false;
+      // hook_enable = false;
     }
   }
   if(hook_enable) {

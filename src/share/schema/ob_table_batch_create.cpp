@@ -478,13 +478,21 @@ int TableBatchCreateByPass::run() {
     [&](){ return run_insert_all_column_history(); },
   };
 
+  std::vector<std::atomic<int64_t>> size(run_insert.size());
+  size[0] = all_core_table_rows_.size();
+  size[1] = all_table_rows_.size();
+  size[2] = all_column_rows_.size();
+  size[3] = all_ddl_operation_rows_.size();
+  size[4] = all_table_history_rows_.size();
+  size[5] = all_column_history_rows_.size();
+
   DEFER({for(auto x:insert_info)OB_DELETE(ZypInsertInfo, "insert_info", x);});
 
   auto find_max_idx=[&]() {
     int ret = -1;
-    long max_count=-1;
+    int64_t max_count=-1;
     for(int i=0;i<insert_info.size();i++) {
-      auto t = insert_info[i]->count();
+      int64_t t = size[i];
       if(t>0&&t>max_count)max_count=t, ret=i;
     }
     LOG_INFO("find_max_idx", K(ret), K(max_count));
@@ -497,6 +505,8 @@ int TableBatchCreateByPass::run() {
     DEFER({zyp_disable();});
     zyp_insert_info = insert_info[idx];
     const int batch_size = 4096;
+    auto now = size[idx].fetch_sub(batch_size);
+    if(now<0) return;
     ObArray<ZypRow*> rows = zyp_insert_info->get_row(batch_size);
     if(rows.count() == 0) return;
     LOG_INFO("::zyp_insert_info", K(::zyp_insert_info));
@@ -520,7 +530,7 @@ int TableBatchCreateByPass::run() {
   ParallelRunner runner;
   runner.run_parallel([&]() {
     for(int i=0;i<run_insert.size();i++) {
-      while(insert_info[i]->count()) {
+      while(size[i]>0) {
         run(i);
       }
     }
@@ -530,15 +540,11 @@ int TableBatchCreateByPass::run() {
 }
 
 void TableBatchCreateByPass::init_core_all_table_idx() {
-  ObCoreTableProxy kv(OB_ALL_TABLE_TNAME, *global_client_, tenant_id_);
-  kv.load();
-  core_all_table_idx_ = kv.row_count()+1;
+  core_all_table_idx_ = 1+1;
 }
 
 void TableBatchCreateByPass::init_core_all_column_idx() {
-  ObCoreTableProxy kv(OB_ALL_COLUMN_TNAME, *global_client_, tenant_id_);
-  kv.load();
-  core_all_column_idx_ = kv.row_count()+1;
+  core_all_column_idx_ = 6+1;
 }
 
 std::atomic_long& TableBatchCreateByPass::get_core_all_table_idx() {
