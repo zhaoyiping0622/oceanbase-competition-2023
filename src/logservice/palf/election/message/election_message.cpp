@@ -187,7 +187,7 @@ inner_priority_seed_(static_cast<uint64_t>(PRIORITY_SEED_BIT::DEFAULT_SEED))
 
 int ElectionPrepareRequestMsgMiddle::set(const ElectionPriority *priority,
                                    const common::ObRole role) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   int ret = common::OB_SUCCESS;
   role_ = static_cast<int64_t>(role);
   // create_buffer_and_serialize_priority(priority_buffer_, buffer_length_, priority);
@@ -325,7 +325,7 @@ flag_not_less_than_4_2_(request.not_less_than_4_2()) {
 
 int ElectionAcceptResponseMsgMiddle::set_accepted(const int64_t ballot_number,
                                                   const ElectionPriority *priority) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   int ret = common::OB_SUCCESS;
   ballot_number_ = ballot_number;
   accepted_ = true;

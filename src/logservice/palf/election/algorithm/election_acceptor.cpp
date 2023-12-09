@@ -53,7 +53,7 @@ public:
   template <typename RequestMsg, typename Acceptor>
   static bool check_ballot_valid(const RequestMsg &msg, Acceptor *p_acceptor, const LogPhase phase)
   {
-    ELECT_TIME_GUARD(25_ms);
+    ELECT_TIME_GUARD(12_ms);
     #define PRINT_WRAPPER K(msg), K(*p_acceptor)
     bool ret = false;
     if (OB_UNLIKELY(msg.get_ballot_number() < p_acceptor->ballot_number_)) {
@@ -104,7 +104,7 @@ last_dump_acceptor_info_ts_(INVALID_VALUE) {}
 void ElectionAcceptor::advance_ballot_number_and_reset_related_states_(const int64_t new_ballot_number,
                                                                        const LogPhase phase)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   #define PRINT_WRAPPER K(new_ballot_number), K(*this)
   if (new_ballot_number > ballot_number_) {
     ballot_number_ = new_ballot_number;
@@ -122,11 +122,11 @@ int ElectionAcceptor::start()
   bool last_record_lease_valid_state = false;
   int ret = OB_SUCCESS;
   return p_election_->timer_->schedule_task_repeat(time_window_task_handle_,
-                                                   25_ms,
+                                                   12_ms,
                                                    [this,
                                                     last_record_lease_owner,
                                                     last_record_lease_valid_state]() mutable {
-    ELECT_TIME_GUARD(25_ms);
+    ELECT_TIME_GUARD(12_ms);
     #define PRINT_WRAPPER KR(ret), K(*this)
     int ret = OB_SUCCESS;
     
@@ -208,7 +208,7 @@ void ElectionAcceptor::stop()
 
 void ElectionAcceptor::reset_time_window_states_(const LogPhase phase)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   #define PRINT_WRAPPER K(*this)
   if (is_time_window_opened_) {
     is_time_window_opened_ = false;// 推大ballot number的时候要关闭时间窗口
@@ -221,7 +221,7 @@ void ElectionAcceptor::reset_time_window_states_(const LogPhase phase)
 
 void ElectionAcceptor::on_prepare_request(const ElectionPrepareRequestMsg &prepare_req)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   #define PRINT_WRAPPER KR(ret), K(prepare_req), K(*this)
   CHECK_SILENCE();// 启动后的要维持一段静默时间，acceptor假装看不到任何消息，以维护lease的正确语义
   int ret = OB_SUCCESS;
@@ -305,7 +305,7 @@ void ElectionAcceptor::on_prepare_request(const ElectionPrepareRequestMsg &prepa
 void ElectionAcceptor::on_accept_request(const ElectionAcceptRequestMsg &accept_req,
                                          int64_t *us_to_expired)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   #define PRINT_WRAPPER KR(ret), K(accept_req), K(*this)
   CHECK_SILENCE();// 启动后的要维持一段静默时间，acceptor假装看不到任何消息，以维护lease的语义
   int ret = OB_SUCCESS;

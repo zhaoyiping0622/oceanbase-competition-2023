@@ -55,7 +55,7 @@ bool MemberList::only_membership_version_different(const MemberList &rhs) const
 
 bool MemberList::operator==(const MemberList &rhs) const
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   bool ret = false;
   // 检查旧的成员组的信息是否一致
   int valid_member_list_count = 0;
@@ -90,7 +90,7 @@ bool MemberList::operator!=(const MemberList &rhs) const { return !this->operato
 
 int MemberList::assign(const MemberList &rhs)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   int ret = OB_SUCCESS;
   if (CLICK_FAIL(addr_list_.assign(rhs.get_addr_list()))) {
     ELECT_LOG(ERROR, "assign addrlist filed", KR(ret));
@@ -105,7 +105,7 @@ int MemberList::set_new_member_list(const common::ObArray<common::ObAddr> &addr_
                                     const LogConfigVersion membership_version,
                                     const int64_t replica_num)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(12_ms);
   int ret = OB_SUCCESS;
   if (CLICK_FAIL(addr_list_.assign(addr_list))) {
     ELECT_LOG(ERROR, "assign addrlist filed", KR(ret));
