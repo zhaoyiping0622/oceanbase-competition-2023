@@ -2436,7 +2436,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   int ret = OB_SUCCESS;
   auto* trace_id = ObCurTraceId::get_trace_id();
   auto set_trace_id = [&]() {if(trace_id) ObCurTraceId::set(*trace_id);};
-  ObArray<ObTableSchema> core_tables;
   ObArray<ObTableSchema> view_tables;
   // __all_table_history
   // __all_column_history
@@ -2445,11 +2444,9 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     auto& table = tables.at(i);
     if(table.is_view_table()) {
       view_tables.push_back(table);
-    } else {
-      if(is_core_table(table.get_table_id())) core_tables.push_back(tables.at(i));
     }
   }
-  oceanbase::schema::TableBatchCreateByPass core(core_tables, client_start, client_end);
+  oceanbase::schema::TableBatchCreateByPass core(tables, client_start, client_end);
   oceanbase::schema::TableBatchCreateNormal view(view_tables, client_start, client_end, this);
   std::thread core_run_thread([&](){
     set_trace_id();
