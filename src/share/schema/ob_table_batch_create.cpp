@@ -376,6 +376,44 @@ ObDMLSqlSplicer& ObCoreTableProxyBatch::getDML() {
   return dml_;
 }
 
+struct DatumSerialize {
+  int64_t all_size;
+  int64_t size;
+  char buf[0];
+};
+
+void serialize_datums(ObDatum* datums, int64_t size) {
+  int64_t buf_size = 0;
+  for(int i=0;i<size;i++) {
+    auto& datum=datums[i];
+    buf_size += datum.len_;
+  }
+  int64_t all_size = sizeof(DatumSerialize)+sizeof(ObDatum)*size+buf_size;
+  char* buf = (char*)malloc(all_size);
+  DatumSerialize* tmp = (DatumSerialize*) buf;
+  tmp->all_size = all_size;
+  tmp->size = size;
+  char* datum_buf = tmp->buf;
+  char* extend_buf = tmp->buf+sizeof(ObDatum)*size;
+  for(int i=0;i<size;i++) {
+    auto &datum=datums[i];
+    memcpy(datum_buf+i*sizeof(ObDatum), &datum, sizeof(ObDatum));
+    memcpy(extend_buf, datum.ptr_, datum.len_);
+    extend_buf+=datum.len_;
+  }
+  zyp_unlimit_log(buf, all_size);
+  free(buf);
+}
+
+void deserialize_datums(DatumSerialize* tmp, ObDatum*&datums) {
+  datums = (ObDatum*)tmp->buf;
+  char* extend_buf = tmp->buf+sizeof(ObDatum)*tmp->size;
+  for(int i=0;i<tmp->size;i++) {
+    datums[i].ptr_ = extend_buf;
+    extend_buf+=datums[i].len_;
+  }
+}
+
 namespace schema {
 
 TableBatchCreateByPass::TableBatchCreateByPass(common::ObIArray<ObTableSchema>& tables, StartFunc start, EndFunc end): client_start_(start), client_end_(end), tables_(tables) {
@@ -410,6 +448,24 @@ TableBatchCreateByPass::~TableBatchCreateByPass() {
   // free_all(all_ddl_operation_rows_);
 }
 
+void SerializeLightyQueue(LightyQueue& queue, const char* name) {
+  ObArray<ZypRow*> rows;
+  while(queue.size()) {
+    void* data;
+    queue.pop(data);
+    rows.push_back((ZypRow*)data);
+  }
+  char buf[512];
+  zyp_unlimit_log(buf, sprintf(buf, "%ld ", rows.count()));
+  zyp_unlimit_log(name, strlen(name));
+  for(int i=0;i<rows.count();i++) {
+    rows[i]->init_datums();
+    ObDatum* datums = rows[i]->get_datums();
+    serialize_datums(datums, rows[i]->get_cells_cnt());
+  }
+  for(auto x:rows) queue.push(x);
+}
+
 void TableBatchCreateByPass::prepare_not_core() {
   LOG_INFO("TableBatchCreateByPass prepare_not_core begin");
   DEFER({LOG_INFO("TableBatchCreateByPass prepare_not_core end");});
@@ -431,6 +487,11 @@ void TableBatchCreateByPass::prepare_not_core() {
   ParallelRunner runner;
   runner.run_parallel_range(0, (int)tables_.count(), base_func);
   LOG_INFO("prepare_not_core", K(tables_.count()), K(all_table_rows_.size()), K(all_column_rows_.size()), K(all_table_history_rows_.size()), K(all_column_history_rows_.size()), K(all_ddl_operation_rows_.size()));
+  SerializeLightyQueue(all_table_rows_, "zyp_all_table_rows\n");
+  SerializeLightyQueue(all_column_rows_, "zyp_all_column_rows\n");
+  SerializeLightyQueue(all_table_history_rows_, "zyp_all_table_history_rows\n");
+  SerializeLightyQueue(all_column_history_rows_, "zyp_all_column_history_rows\n");
+  SerializeLightyQueue(all_ddl_operation_rows_, "zyp_all_ddl_operation_rows\n");
 }
 
 void TableBatchCreateByPass::prepare_core() {
@@ -449,6 +510,7 @@ void TableBatchCreateByPass::prepare_core() {
     }
   });
   LOG_INFO("prepare_core", K(tables_.count()), K(all_core_table_rows_.size()));
+  SerializeLightyQueue(all_core_table_rows_, "zyp_all_core_table_rows\n");
 }
 int TableBatchCreateByPass::run() {
   int ret = OB_SUCCESS;

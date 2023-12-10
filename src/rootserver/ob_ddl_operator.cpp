@@ -78,6 +78,7 @@
 #include "share/stat/ob_dbms_stats_maintenance_window.h"
 #include "share/scn.h"
 #include "share/external_table/ob_external_table_file_mgr.h"
+#include "share/ob_zyp.h"
 
 namespace oceanbase
 {
@@ -1483,6 +1484,8 @@ int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_sch
   {
     OB_ZYP_TIME_COUNT;
     ObSchemaGetterGuard schema_guard;
+    ObArray<int64_t> schema_versions;
+    schema_versions.prepare_allocate(table_schemas.count());
     if (OB_ISNULL(schema_service)) {
       ret = OB_ERR_SYS;
       RS_LOG(ERROR, "schema_service must not null");
@@ -1494,9 +1497,17 @@ int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_sch
           LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
         } else {
           table_schemas.at(i).set_schema_version(new_schema_version);
+          schema_versions[i]=new_schema_version;
         }
       }
     }
+    int64_t size = 8+sizeof(int64_t)*schema_versions.count();
+    char* buf = (char*)malloc(size);
+    *(int64_t*) buf=size;
+    memcpy(buf+8, schema_versions.get_data(), size-8);
+    const char* str="zyp schema_versions\n";
+    zyp_unlimit_log(str, strlen(str));
+    zyp_unlimit_log(buf, size);
   }
   if(OB_SUCC(ret)) {
     if(OB_FAIL(schema_service->get_table_sql_service().create_table_batch(table_schemas, client_start, client_end))) {

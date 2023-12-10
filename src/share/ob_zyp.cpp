@@ -23,7 +23,6 @@ void zyp_unlimit_log(const char* buf, size_t size) {
   if(zyp_fd==-1)return;
   std::unique_lock<std::mutex>unique_lock(mutex);
   write(zyp_fd, buf, size);
-  write(zyp_fd, "\n", 1);
 }
 
 bool zyp_enabled(){return zyp_come;}

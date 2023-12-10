@@ -2457,12 +2457,13 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     lib::set_thread_name("core_preapre_thread");
     core.prepare_core();
   });
+  core_prepare_thread.join();
   std::thread other_prepare_thread([&]() {
     set_trace_id();
     lib::set_thread_name("other_prepare_thread");
     other.prepare_not_core();
   });
-  core_prepare_thread.join();
+  other_prepare_thread.join();
   std::thread core_run_thread([&](){
     set_trace_id();
     lib::set_thread_name("core_run_thread");
@@ -2470,7 +2471,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   });
   core_run_thread.join();
   // 至此 有__all_table和__all_column了
-  other_prepare_thread.join();
   std::thread view_prepare_thread([&]() {
     set_trace_id();
     lib::set_thread_name("view_prepare_thread");
