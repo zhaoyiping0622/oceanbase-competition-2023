@@ -35,7 +35,7 @@ ObExprFuncPartHashBase::ObExprFuncPartHashBase(common::ObIAllocator &alloc, ObEx
 }
 
 template<typename T>
-int ObExprFuncPartHashBase::calc_value_for_mysql(const T &input, T &output,
+OB_NOINLINE int ObExprFuncPartHashBase::calc_value_for_mysql(const T &input, T &output,
                                                  const ObObjType input_type)
 {
   int ret = OB_SUCCESS;
