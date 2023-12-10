@@ -6398,40 +6398,6 @@ int ObJsonBaseUtil::compare_decimal_int(const number::ObNumber &a, int64_t b, in
   return ret;
 }
 
-int ObJsonBaseUtil::compare_decimal_double(const number::ObNumber &a, double b, int &res)
-{
-  INIT_SUCC(ret);
-
-  const bool a_is_zero = a.is_zero();
-  const bool a_is_negative = a.is_negative();
-  const bool b_is_negative = (b < 0);
-  const bool b_is_zero = (b == 0);
-
-  if (a_is_negative != b_is_negative) { // The two signs are different. Negative numbers are smaller.
-    res = a_is_negative ? -1 : 1;
-  } else if (a_is_zero) { // If a is 0, b must be either 0 or positive, otherwise the first if statement is entered.
-    res = b_is_zero ? 0 : -1;
-  } else if (b_is_zero) { // If b is 0, then a can only be 0 or positive, and the second if already rules out a being 0, so a is now positive.
-    res = 1;
-  } else { // Both a and B are positive or negative.
-    const int64_t MAX_BUF_SIZE = 256;
-    char buf_alloc[MAX_BUF_SIZE];
-    ObDataBuffer allocator(buf_alloc, MAX_BUF_SIZE);
-    number::ObNumber b_num;
-    if (OB_FAIL(ObJsonBaseUtil::double_to_number(b, allocator, b_num))) {
-      if (ret == OB_NUMERIC_OVERFLOW) {
-        res = a_is_negative ? 1 : -1; // They're both negative numbers. The larger the number, the smaller the number.
-      } else { // Conversion error.
-        LOG_WARN("fail to cast double to number", K(ret), K(b));
-      }
-    } else {
-      res = a.compare(b_num);
-    }
-  }
-
-  return ret;
-}
-
 int ObJsonBaseUtil::compare_double_int(double a, int64_t b, int &res)
 {
   INIT_SUCC(ret);
@@ -6509,7 +6475,7 @@ int ObJsonBaseUtil::compare_double_uint(double a, uint64_t b, int &res)
 }
 
 template<class T>
-int ObJsonBaseUtil::double_to_number(double d, T &allocator, number::ObNumber &num)
+OB_NOINLINE int ObJsonBaseUtil::double_to_number(double d, T &allocator, number::ObNumber &num)
 {
   INIT_SUCC(ret);
   char buf[DOUBLE_TO_STRING_CONVERSION_BUFFER_SIZE] = {0};
@@ -6522,6 +6488,40 @@ int ObJsonBaseUtil::double_to_number(double d, T &allocator, number::ObNumber &n
   if (OB_FAIL(num.from_sci_opt(str.ptr(), str.length(), allocator,
                                 &res_precision, &res_scale))) {
     LOG_WARN("fail to create number from sci_opt", K(ret), K(d), K(length));
+  }
+
+  return ret;
+}
+
+int ObJsonBaseUtil::compare_decimal_double(const number::ObNumber &a, double b, int &res)
+{
+  INIT_SUCC(ret);
+
+  const bool a_is_zero = a.is_zero();
+  const bool a_is_negative = a.is_negative();
+  const bool b_is_negative = (b < 0);
+  const bool b_is_zero = (b == 0);
+
+  if (a_is_negative != b_is_negative) { // The two signs are different. Negative numbers are smaller.
+    res = a_is_negative ? -1 : 1;
+  } else if (a_is_zero) { // If a is 0, b must be either 0 or positive, otherwise the first if statement is entered.
+    res = b_is_zero ? 0 : -1;
+  } else if (b_is_zero) { // If b is 0, then a can only be 0 or positive, and the second if already rules out a being 0, so a is now positive.
+    res = 1;
+  } else { // Both a and B are positive or negative.
+    const int64_t MAX_BUF_SIZE = 256;
+    char buf_alloc[MAX_BUF_SIZE];
+    ObDataBuffer allocator(buf_alloc, MAX_BUF_SIZE);
+    number::ObNumber b_num;
+    if (OB_FAIL(ObJsonBaseUtil::double_to_number(b, allocator, b_num))) {
+      if (ret == OB_NUMERIC_OVERFLOW) {
+        res = a_is_negative ? 1 : -1; // They're both negative numbers. The larger the number, the smaller the number.
+      } else { // Conversion error.
+        LOG_WARN("fail to cast double to number", K(ret), K(b));
+      }
+    } else {
+      res = a.compare(b_num);
+    }
   }
 
   return ret;
