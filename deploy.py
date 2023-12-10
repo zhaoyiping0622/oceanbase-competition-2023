@@ -125,8 +125,8 @@ if __name__ == "__main__":
 
     os.chdir(args.cluster_home_path)
     observer_cmd = f"{bin_abs_path} {observer_args}"
-    _logger.info(observer_cmd)
     shell_result = subprocess.run(observer_cmd, shell=True)
+    _logger.info(observer_cmd)
     _logger.info('deploy done. returncode=%d', shell_result.returncode)
 
     # time.sleep(1)
