@@ -80,16 +80,22 @@ class ZypRow {
     size_t to_string(const char* buf, size_t size) const {return 0;}
 };
 
+struct Rows_p {
+  ObDatum** rows;
+  int64_t size;
+};
+
 class ZypInsertInfo {
 public:
   template<typename T>
   using ObArray = oceanbase::common::ObArray<T>;
   using LightyQueue = oceanbase::LightyQueue;
-  ZypInsertInfo(LightyQueue& queue):queue_(queue) {}
-  ObArray<ZypRow*> get_row(int64_t count);
-  long count() { return queue_.size(); }
+  ZypInsertInfo(Rows_p& rows):rows_(rows) {}
+  ObDatum** get_row(int64_t count, int64_t& size);
+  long count() { return rows_.size; }
 private:
-  LightyQueue& queue_;
+  Rows_p& rows_;
+  std::atomic<int64_t> idx_{0};
 };
 
 class ZypAllocator {
@@ -121,9 +127,9 @@ private:
 };
 
 extern thread_local ZypInsertInfo* zyp_insert_info;
-extern thread_local ZypRow** zyp_row_head;
-extern thread_local ZypRow** zyp_row_tail;
-extern thread_local ZypRow** zyp_current_row;
+extern thread_local ObDatum** zyp_row_head;
+extern thread_local ObDatum** zyp_row_tail;
+extern thread_local ObDatum** zyp_current_row;
 extern thread_local bool zyp_inited;
 extern thread_local ZypAllocator* local_allocator;
 extern oceanbase::LightyQueue local_allocator_gc_;
@@ -148,3 +154,34 @@ typedef int (*schema_create_func)(oceanbase::share::schema::ObTableSchema &table
 
 extern schema_create_func import_schemas [];
 extern schema_create_func not_import_schemas [];
+
+class Row {
+public:
+  int64_t all_size;
+  int64_t size;
+  ObDatum buf[0];
+};
+class Rows {
+public:
+  int64_t all_size;
+  int64_t size;
+  char buf[0];
+};
+class SchemaVersions {
+public:
+  int64_t size;
+  int64_t buf[0];
+};
+class Round {
+public:
+  SchemaVersions *schema_versions;
+  Rows_p all_core_table;
+  Rows_p all_table;
+  Rows_p all_column;
+  Rows_p all_table_history;
+  Rows_p all_column_history;
+  Rows_p all_ddl_operation;
+};
+
+extern std::array<Round, 3> rounds;
+extern Round* zyp_round;
