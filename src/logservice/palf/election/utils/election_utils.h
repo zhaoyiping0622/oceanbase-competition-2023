@@ -118,7 +118,7 @@ inline void bubble_sort_desc(common::ObArray<T> &array)
 template <typename T>
 inline int get_sorted_majority_one_desc(const common::ObArray<T> &array, T &majority_element)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   int ret = common::OB_SUCCESS;
   common::ObArray<T> temp_array;
   for (int64_t idx = 0; idx < array.count() && OB_SUCC(ret); ++idx) {
@@ -286,7 +286,7 @@ private:
 template <typename T>
 int MemberListWithStates::init_array_(common::ObArray<T> &v, const int64_t size, T default_value)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   int ret = OB_SUCCESS;
   if (v.count() == size) {
     for (int64_t idx = 0; idx < size; ++idx) {

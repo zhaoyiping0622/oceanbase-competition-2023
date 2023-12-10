@@ -150,7 +150,7 @@ private:// 定向暴露给友元类
                               const bool decentralized_voting,
                               const LogPhase phase) const
   {
-    ELECT_TIME_GUARD(25_ms);
+    ELECT_TIME_GUARD(5_ms);
     #define PRINT_WRAPPER KR(ret), K(rhs_is_higher), K(compare_result), K(reason), K(lhs), K(rhs),\
                           K(decentralized_voting), KPC(self_priority), KPC(lhs_priority),\
                           KPC(rhs_priority), K(*this)

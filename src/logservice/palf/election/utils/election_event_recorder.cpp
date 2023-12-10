@@ -48,7 +48,7 @@ int64_t EventRecorder::to_string(char *buf, const int64_t len) const
 
 int EventRecorder::report_event_(ElectionEventType type, const common::ObString &info)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   int ret = OB_SUCCESS;
   int retry_times = 0;
   int64_t report_ts = ObClockGenerator::getRealClock();
@@ -68,7 +68,7 @@ int EventRecorder::report_event_(ElectionEventType type, const common::ObString 
   } else if (!need_report_) {
     LOG_EVENT(INFO, "event happened, but no need do report");
   } else if (CLICK_FAIL(GLOBAL_REPORT_TIMER.schedule_task_ignore_handle_repeat_and_immediately(15_s, [retry_times, report_ts, self_addr, mtl_id, type, ls_id, uniq_holder]() mutable -> bool {
-    ELECT_TIME_GUARD(25_ms);
+    ELECT_TIME_GUARD(5_ms);
     int ret = OB_SUCCESS;
     bool stop_flag = false;
     char ip[64] = {0};
@@ -105,7 +105,7 @@ int EventRecorder::report_event_(ElectionEventType type, const common::ObString 
 }
 
 int EventRecorder::report_vote_event(const ObAddr &dest_svr, const ObStringHolder &reason) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -120,7 +120,7 @@ int EventRecorder::report_vote_event(const ObAddr &dest_svr, const ObStringHolde
 }
 
 int EventRecorder::report_decentralized_to_be_leader_event(const MemberListWithStates &member_list_with_states) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -152,7 +152,7 @@ int EventRecorder::report_decentralized_to_be_leader_event(const MemberListWithS
 }
 
 int EventRecorder::report_directly_change_leader_event(const ObAddr &dest_svr, const ObStringHolder &reason) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -167,7 +167,7 @@ int EventRecorder::report_directly_change_leader_event(const ObAddr &dest_svr, c
 }
 
 int EventRecorder::report_prepare_change_leader_event(const ObAddr &dest_svr, const ObStringHolder &reason) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -182,7 +182,7 @@ int EventRecorder::report_prepare_change_leader_event(const ObAddr &dest_svr, co
 }
 
 int EventRecorder::report_change_leader_to_revoke_event(const ObAddr &dest_svr) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -197,7 +197,7 @@ int EventRecorder::report_change_leader_to_revoke_event(const ObAddr &dest_svr) 
 }
 
 int EventRecorder::report_change_leader_to_takeover_event(const ObAddr &addr) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -212,7 +212,7 @@ int EventRecorder::report_change_leader_to_takeover_event(const ObAddr &addr) {
 }
 
 int EventRecorder::report_leader_lease_expired_event(const MemberListWithStates &member_list_with_states) {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(member_list_with_states)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -241,7 +241,7 @@ int EventRecorder::report_leader_lease_expired_event(const MemberListWithStates 
 
 int EventRecorder::report_member_list_changed_event(const MemberList &old_list, const MemberList &new_list)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(info), K(old_list), K(new_list)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -272,7 +272,7 @@ int EventRecorder::report_member_list_changed_event(const MemberList &old_list, 
 
 int EventRecorder::report_acceptor_lease_expired_event(const Lease &lease)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(lease)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};
@@ -292,7 +292,7 @@ int EventRecorder::report_acceptor_lease_expired_event(const Lease &lease)
 
 int EventRecorder::report_acceptor_witness_change_leader_event(const ObAddr &old_leader, const ObAddr &new_leader)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this), K(old_leader), K(new_leader)
   int ret = OB_SUCCESS;
   char info[INFO_MAX_LEN] = {0};

@@ -38,7 +38,7 @@ struct ResponseChecker
                                                                   ElectionProposer *proposer,
                                                                   const LogPhase phase)
   {
-    ELECT_TIME_GUARD(25_ms);
+    ELECT_TIME_GUARD(5_ms);
     #define PRINT_WRAPPER K(msg), K(*proposer)
     bool ret = false;
     // 1. 检查restart counter
@@ -86,7 +86,7 @@ record_lease_interval_(INVALID_VALUE) {}
 
 int ElectionProposer::init(const int64_t restart_counter)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER K(*this)
   int ret = OB_SUCCESS;
   if (CLICK_FAIL(memberlist_with_states_.init())) {
@@ -100,7 +100,7 @@ int ElectionProposer::init(const int64_t restart_counter)
 
 int ElectionProposer::set_member_list(const MemberList &new_member_list)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER K(*this), K(new_member_list)
   int ret = OB_SUCCESS;
   // 检查旧的成员组的信息是否一致
@@ -138,7 +138,7 @@ int ElectionProposer::set_member_list(const MemberList &new_member_list)
 
 int ElectionProposer::change_leader_to(const ObAddr &dest_addr)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER K(*this), K(dest_addr), K(redirect_addr)
   int ret = OB_SUCCESS;
   int idx = 0;
@@ -166,7 +166,7 @@ int ElectionProposer::change_leader_to(const ObAddr &dest_addr)
 
 bool ElectionProposer::leader_revoke_if_lease_expired_(RoleChangeReason reason)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER K(*this)
   bool ret_bool = false;
   if (role_ == ObRole::LEADER && !check_leader()) {
@@ -182,7 +182,7 @@ bool ElectionProposer::leader_revoke_if_lease_expired_(RoleChangeReason reason)
 
 bool ElectionProposer::leader_takeover_if_lease_valid_(RoleChangeReason reason)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER K(*this)
   bool ret_bool = false;
   int ret = common::OB_SUCCESS;
@@ -201,7 +201,7 @@ void ElectionProposer::
      advance_ballot_number_and_reset_related_states_(const int64_t new_ballot_number,
                                                      const char *reason)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   assert(new_ballot_number >= ballot_number_);
   ELECT_LOG(INFO, "advance ballot number", K(new_ballot_number), K(reason), K(*this));
   ballot_number_ = new_ballot_number;
@@ -213,12 +213,12 @@ void ElectionProposer::
 
 int ElectionProposer::register_renew_lease_task_()
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this)
   int ret = OB_SUCCESS;
   // 如果续约不够快很多case不能及时切主，所以当MAX_TST设置的比较大时，也让续约间隔设置的短一些
   if (CLICK_FAIL(p_election_->timer_->schedule_task_repeat(renew_lease_task_handle_,
-                                                           std::min(int64_t(25_ms), CALCULATE_RENEW_LEASE_INTERVAL()),
+                                                           std::min(int64_t(5_ms), CALCULATE_RENEW_LEASE_INTERVAL()),
                                                            [this]() {
     int ret = OB_SUCCESS;
     LockGuard lock_guard(p_election_->lock_);
@@ -263,7 +263,7 @@ int ElectionProposer::register_renew_lease_task_()
 // 这个接口是在外部未加锁的状态下调用的
 int ElectionProposer::reschedule_or_register_prepare_task_after_(const int64_t delay_us)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(delay_us)
   int ret = OB_SUCCESS;
   CLICK();
@@ -299,7 +299,7 @@ int ElectionProposer::reschedule_or_register_prepare_task_after_(const int64_t d
 int ElectionProposer::start()
 {
   #define PRINT_WRAPPER K(*this)
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   int ret = OB_SUCCESS;
   if (CLICK_FAIL(reschedule_or_register_prepare_task_after_(3_s))) {
     LOG_INIT(ERROR, "first time register devote task failed");
@@ -326,7 +326,7 @@ void ElectionProposer::stop()
 
 void ElectionProposer::prepare(const ObRole role)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(role), K(*this)
   int ret = OB_SUCCESS;
   int64_t cur_ts = ObClockGenerator::getCurrentTime();
@@ -377,7 +377,7 @@ void ElectionProposer::prepare(const ObRole role)
 void ElectionProposer::on_prepare_request(const ElectionPrepareRequestMsg &prepare_req,
                                           bool *need_register_devote_task)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(prepare_req), K(*this)
   int ret = OB_SUCCESS;
   // 0. 拒绝旧消息、过滤本轮次消息、根据新消息推大轮次
@@ -442,7 +442,7 @@ void ElectionProposer::on_prepare_request(const ElectionPrepareRequestMsg &prepa
 
 void ElectionProposer::on_prepare_response(const ElectionPrepareResponseMsg &prepare_res)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(prepare_res), K(*this)
   int ret = OB_SUCCESS;
   LogPhase phase = role_ == ObRole::LEADER ? LogPhase::RENEW_LEASE : LogPhase::ELECT_LEADER;
@@ -479,7 +479,7 @@ void ElectionProposer::on_prepare_response(const ElectionPrepareResponseMsg &pre
 
 void ElectionProposer::propose()
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(*this)
   int ret = OB_SUCCESS;
   int64_t current_ts = get_monotonic_ts();
@@ -507,7 +507,7 @@ void ElectionProposer::propose()
 
 void ElectionProposer::on_accept_response(const ElectionAcceptResponseMsg &accept_res)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(accept_res), K(new_lease_end), K(*this)
   int ret = OB_SUCCESS;
   int64_t new_lease_end = 0;
@@ -601,7 +601,7 @@ void ElectionProposer::on_accept_response(const ElectionAcceptResponseMsg &accep
 
 int ElectionProposer::prepare_change_leader_to_(const ObAddr &dest_addr, const ObStringHolder &reason)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(dest_addr), K(reason), K(*this)
   int ret = OB_SUCCESS;
   if (OB_NOT_NULL(p_election_->priority_) && p_election_->priority_->has_fatal_failure()) {// FATAL failure的切主绕过RCS，不等上层做准备
@@ -628,7 +628,7 @@ int ElectionProposer::prepare_change_leader_to_(const ObAddr &dest_addr, const O
 
 void ElectionProposer::inner_change_leader_to(const ObAddr &dst)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER KR(ret), K(change_leader_msg), K(dst), K(*this)
   int ret = OB_SUCCESS;
   // 发出切主消息要带上旧主的ballot number
@@ -661,7 +661,7 @@ void ElectionProposer::inner_change_leader_to(const ObAddr &dst)
 
 void ElectionProposer::on_change_leader(const ElectionChangeLeaderMsg &change_leader_msg)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   // 新主收到切主消息后，进行一次Leader Prepare
   #define PRINT_WRAPPER K(change_leader_msg), K(*this)
   LOG_CHANGE_LEADER(INFO, "handle change leader message");
@@ -742,7 +742,7 @@ int64_t ElectionProposer::to_string(char *buf, const int64_t buf_len) const
 
 int ElectionProposer::revoke(const RoleChangeReason &reason)
 {
-  ELECT_TIME_GUARD(25_ms);
+  ELECT_TIME_GUARD(5_ms);
   #define PRINT_WRAPPER K(*this)
   int ret = OB_SUCCESS;
   if (!check_leader()) {
