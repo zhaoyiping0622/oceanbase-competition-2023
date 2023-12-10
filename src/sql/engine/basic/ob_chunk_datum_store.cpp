@@ -175,26 +175,7 @@ int ObChunkDatumStore::StoredRow::do_build(StoredRow *&sr,
   } else {
     sr->cnt_ = exprs.count();
     ObDatum *datums = sr->cells();
-    if(zyp_enabled()) {
-      if(zyp_current_row == nullptr) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_INFO("zyp_current_row is null");
-      } else if(*zyp_current_row == nullptr) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_INFO("*zyp_current_row is null");
-      } else if((*zyp_current_row)->get_cells_cnt() != exprs.count()){
-        LOG_INFO("cells count not equals to exprs count");
-      } else {
-        ZypRow* row = *zyp_current_row;
-        auto* zyp_datums = row->get_datums();
-        for(int i=0;OB_SUCC(ret) && i<row->get_cells_cnt();i++) {
-          ret = UNSWIZZLING
-              ? deep_copy_unswizzling(zyp_datums[i], &datums[i], buf, buf_len, pos)
-              : datums[i].deep_copy(zyp_datums[i], buf, buf_len, pos);
-        }
-        // LOG_INFO("zyp build one row");
-      }
-    } else for (int64_t i = 0; i < exprs.count() && OB_SUCC(ret); i++) {
+    for (int64_t i = 0; i < exprs.count() && OB_SUCC(ret); i++) {
       ObExpr *expr = exprs.at(i);
       ObDatum *in_datum = NULL;
       if (OB_UNLIKELY(NULL == expr)) {
@@ -204,8 +185,8 @@ int ObChunkDatumStore::StoredRow::do_build(StoredRow *&sr,
         LOG_WARN("expression evaluate failed", K(ret));
       } else {
         ret = UNSWIZZLING
-            ? deep_copy_unswizzling(*in_datum, &datums[i], buf, buf_len, pos)
-            : datums[i].deep_copy(*in_datum, buf, buf_len, pos);
+          ? deep_copy_unswizzling(*in_datum, &datums[i], buf, buf_len, pos)
+          : datums[i].deep_copy(*in_datum, buf, buf_len, pos);
       }
     }
     if (OB_SUCC(ret)) {

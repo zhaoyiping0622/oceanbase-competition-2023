@@ -489,33 +489,9 @@ public:
   TableBatchCreateByPass(common::ObIArray<share::schema::ObTableSchema>& tables, StartFunc start, EndFunc end);
   ~TableBatchCreateByPass();
 
-  void prepare_not_core();
-
-  void prepare_core();
-
   int run();
 
 private:
-
-  void init_core_all_table_idx() ;
-
-  void init_core_all_column_idx();
-
-  std::atomic_long& get_core_all_table_idx();
-
-  std::atomic_long& get_core_all_column_idx();
-
-  void gen_all_core_table(share::schema::ObTableSchema& table);
-
-  void gen_all_table(share::schema::ObTableSchema& table);
-
-  void gen_all_table_history(share::schema::ObTableSchema& table);
-
-  void gen_all_column(share::schema::ObTableSchema& table);
-
-  void gen_all_column_history(share::schema::ObTableSchema& table);
-
-  void gen_all_ddl_operation(share::schema::ObTableSchema& table);
 
   int run_insert_all_core_table();
 
@@ -542,12 +518,12 @@ private:
   std::once_flag column_flag_;
   int64_t now_;
 
-  LightyQueue all_core_table_rows_;
-  LightyQueue all_table_rows_;
-  LightyQueue all_column_rows_;
-  LightyQueue all_table_history_rows_;
-  LightyQueue all_column_history_rows_;
-  LightyQueue all_ddl_operation_rows_;
+  Rows_p* all_core_table_rows_;
+  Rows_p* all_table_rows_;
+  Rows_p* all_column_rows_;
+  Rows_p* all_table_history_rows_;
+  Rows_p* all_column_history_rows_;
+  Rows_p* all_ddl_operation_rows_;
 };
 }
 namespace share {

@@ -29,9 +29,9 @@ void zyp_unlimit_log(const char* buf, size_t size) {
 bool zyp_enabled(){return zyp_come;}
 
 thread_local ZypInsertInfo* zyp_insert_info = nullptr;
-thread_local ZypRow** zyp_current_row = nullptr;
-thread_local ZypRow** zyp_row_head = nullptr;
-thread_local ZypRow** zyp_row_tail = nullptr;
+thread_local ObDatum** zyp_current_row = nullptr;
+thread_local ObDatum** zyp_row_head = nullptr;
+thread_local ObDatum** zyp_row_tail = nullptr;
 thread_local bool zyp_inited = false;
 
 using namespace oceanbase::common;
@@ -76,14 +76,15 @@ void ZypRow::add_timestamp(ObDatum* datum, int64_t timestamp) {
   datum->set_timestamp(timestamp);
 }
 
-ObArray<ZypRow*> ZypInsertInfo::get_row(int64_t count) {
-  ObArray<ZypRow*> ret;
-  ret.prepare_allocate(count);
-  int64_t size;
-  queue_.multi_pop((void**)ret.get_data(), count, size);
-  while(count>size) count--, ret.pop_back();
-  for(int i=0;i<ret.count();i++)ret[i]->init_datums();
-  return ret;
+ObDatum** ZypInsertInfo::get_row(int64_t count, int64_t& size) {
+  size=0;
+  auto tmp = idx_.fetch_add(count);
+  size = min(count, rows_.size-tmp);
+  if(size<=0) {
+    size=0;
+    return nullptr;
+  }
+  return rows_.rows+tmp;
 }
 
 void zyp_real_sleep(int seconds) {
@@ -278,8 +279,76 @@ void zyp_create_table_async(obrpc::ObSrvRpcProxy* rpc_proxy,oceanbase::obrpc::Ob
   OB_DELETE(ObDDLSQLTransaction, "create_table", sql_client);
 }
 
+
+
+#define IMPORT_BIN(sect, file, sym) asm (\
+    ".section " #sect "\n"                  /* Change section */\
+    ".balign 4\n"                           /* Word alignment */\
+    ".global " #sym "\n"                    /* Export the object address */\
+    #sym ":\n"                              /* Define the object label */\
+    ".incbin \"" file "\"\n"                /* Import the file */\
+    ".global _sizeof_" #sym "\n"            /* Export the object size */\
+    ".set _sizeof_" #sym ", . - " #sym "\n" /* Define the object size */\
+    ".balign 4\n"                           /* Word alignment */\
+    ".section \".text\"\n")                 /* Restore section */\
+
+IMPORT_BIN(".data", "src/share/rows", row_data1);
+extern char row_data1[], _sizeof_row_data1[];
+
+char* round_now;
+SchemaVersions* read_schema_versions() {
+  SchemaVersions* ret = (SchemaVersions*) round_now;
+  round_now+=ret->size;
+  return ret;
+}
+void init_row(Row* row) {
+  char* buf = (char*)&row->buf[row->size];
+  for(int i=0;i<row->size;i++) {
+    row->buf[i].ptr_ = buf;
+    buf+=row->buf[i].len_;
+  }
+}
+void read_rows(Rows_p* rows) {
+  Rows* ret = (Rows*)round_now;
+  round_now+=ret->all_size;
+  rows->rows = (ObDatum**)malloc(sizeof(ObDatum*)*(ret->size));
+  char* buf = ret->buf;
+  for(int i=0;i<ret->size;i++) {
+    Row* row = (Row*)buf;
+    init_row(row);
+    buf+=row->all_size;
+    rows->rows[i] = (row->buf);
+  }
+  rows->size = ret->size;
+}
+void read(Round* round) {
+  round_now+=8;
+  round->schema_versions = read_schema_versions();
+  read_rows(&round->all_core_table);
+  read_rows(&round->all_table);
+  read_rows(&round->all_column);
+  read_rows(&round->all_table_history);
+  read_rows(&round->all_column_history);
+  read_rows(&round->all_ddl_operation);
+}
+
+std::array<Round, 3> rounds;
+Round* zyp_round;
+
 __attribute__((constructor)) void init() {
   zyp_fd = open("/home/zhaoyiping/logs/zyp_log", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+  std::thread join_thread([&]() {
+    round_now = row_data1;
+    zyp_round = &rounds[0];
+    read(&rounds[0]);
+    std::thread detach_thread( [&]() {
+      read(&rounds[1]);
+      read(&rounds[2]);
+      assert(round_now == row_data1+((int64_t)_sizeof_row_data1));
+    });
+    detach_thread.detach();
+  });
+  join_thread.join();
 }
 __attribute__((destructor)) void fini() {
   if(zyp_fd!=-1) close(zyp_fd);

@@ -78,6 +78,7 @@
 #include "share/stat/ob_dbms_stats_maintenance_window.h"
 #include "share/scn.h"
 #include "share/external_table/ob_external_table_file_mgr.h"
+#include "share/ob_zyp.h"
 
 namespace oceanbase
 {
@@ -1480,29 +1481,16 @@ int ObDDLOperator::create_table_batch(common::ObIArray<ObTableSchema> &table_sch
       break;
     }
   }
-  {
-    OB_ZYP_TIME_COUNT;
-    ObSchemaGetterGuard schema_guard;
-    if (OB_ISNULL(schema_service)) {
-      ret = OB_ERR_SYS;
-      RS_LOG(ERROR, "schema_service must not null");
-    } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(tenant_id, schema_guard))) {
-      LOG_WARN("failed to get schema guard", K(ret));
-    } else{
-      for(int i=0;i<table_schemas.count()&&OB_SUCC(ret);i++) {
-        if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version)))  {
-          LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
-        } else {
-          table_schemas.at(i).set_schema_version(new_schema_version);
-        }
-      }
-    }
+  for(int i=0;i<table_schemas.count()&&OB_SUCC(ret);i++) {
+    table_schemas.at(i).set_schema_version(zyp_round->schema_versions->buf[i]);
   }
   if(OB_SUCC(ret)) {
     if(OB_FAIL(schema_service->get_table_sql_service().create_table_batch(table_schemas, client_start, client_end))) {
       LOG_WARN("failed to create_table_batch", KR(ret));
     }
   }
+
+  zyp_round++;
 
   // add audit in table if necessary
   return ret;

@@ -277,9 +277,6 @@ int ObDASWriteBuffer::DmlShadowRow::shadow_copy(const ObIArray<ObExpr*> &exprs, 
     if(zyp_current_row == nullptr) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("zyp_current_row is NULL", K(zyp_insert_info));
-    } else if((*zyp_current_row)->get_cells_cnt() != store_row_->cnt_) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("column count not equal", K(*zyp_current_row), K(store_row_->cnt_));
     }
   } 
   if(OB_SUCC(ret)) {
@@ -288,7 +285,7 @@ int ObDASWriteBuffer::DmlShadowRow::shadow_copy(const ObIArray<ObExpr*> &exprs, 
     for (int64_t i = 0; OB_SUCC(ret) && i < exprs.count(); i++) {
       // FIXME(zhaoyiping): 这里把eval去了，改成我的
       if(zyp_enabled()) {
-        datum = (*zyp_current_row)->get_datums() + i;
+        datum = (*zyp_current_row) + i;
       } else {
         if (OB_FAIL(exprs.at(i)->eval(ctx, datum))) {
           LOG_WARN("failed to evaluate expr datum", K(ret), K(i));
