@@ -2450,7 +2450,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     }
   }
   oceanbase::schema::TableBatchCreateByPass core(core_tables, client_start, client_end);
-  oceanbase::schema::TableBatchCreateByPass other(tables, client_start, client_end);
   oceanbase::schema::TableBatchCreateNormal view(view_tables, client_start, client_end, this);
   std::thread core_run_thread([&](){
     set_trace_id();
@@ -2463,11 +2462,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
     set_trace_id();
     lib::set_thread_name("view_prepare_thread");
     view.prepare();
-  });
-  std::thread other_run_thread([&](){
-    set_trace_id();
-    lib::set_thread_name("other_run_thread");
-    other.run();
   });
   int64_t last_schema_version = 0;
   for(int i=0;i<tables.count();i++) {
@@ -2488,7 +2482,6 @@ int ObTableSqlService::create_table_batch(common::ObIArray<ObTableSchema> &table
   //   dml_table_history.add_column("is_deleted", 0);
   //   dml_table_history.finish_row();
   // }
-  other_run_thread.join();
   view_prepare_thread.join();
   std::thread view_run_thread([&](){
     set_trace_id();
