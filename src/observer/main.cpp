@@ -88,7 +88,7 @@ int usleep(useconds_t microseconds){
   }
 }
 unsigned int sleep(unsigned int seconds) {
-  return usleep(seconds*1000);
+  return usleep(seconds*1000000);
 }
 int nanosleep(const struct timespec *req, struct timespec *rem) {
   if(hook_enable) {

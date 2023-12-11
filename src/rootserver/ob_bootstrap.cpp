@@ -624,8 +624,8 @@ int ObBootstrap::execute_bootstrap(rootserver::ObServerZoneOpService &server_zon
   if (OB_SUCC(ret)) {
     if (OB_FAIL(init_system_data())) {
       LOG_WARN("failed to init system data", KR(ret));
-    // } else if (OB_FAIL(ddl_service_.refresh_schema(OB_SYS_TENANT_ID))) {
-    //   LOG_WARN("failed to refresh_schema", K(ret));
+    } else if (OB_FAIL(ddl_service_.refresh_schema(OB_SYS_TENANT_ID))) {
+      LOG_WARN("failed to refresh_schema", K(ret));
     }
   }
   BOOTSTRAP_CHECK_SUCCESS_V2("refresh_schema");

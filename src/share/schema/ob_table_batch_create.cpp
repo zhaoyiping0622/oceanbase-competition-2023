@@ -504,7 +504,7 @@ int TableBatchCreateByPass::run() {
     zyp_enable();
     DEFER({zyp_disable();});
     zyp_insert_info = insert_info[idx];
-    const int batch_size = 4096;
+    const int batch_size = 512;
     auto now = size[idx].fetch_sub(batch_size);
     if(now<0) return;
     ObArray<ZypRow*> rows = zyp_insert_info->get_row(batch_size);
