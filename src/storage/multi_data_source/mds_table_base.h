@@ -188,7 +188,6 @@ protected:
                              const char *file = __builtin_FILE(),
                              const uint32_t line = __builtin_LINE(),
                              const char *function_name = __builtin_FUNCTION()) {
-    return;
     int ret = OB_SUCCESS;
     observer::MdsEvent event;
     constexpr int64_t buffer_size = 1_KB;
