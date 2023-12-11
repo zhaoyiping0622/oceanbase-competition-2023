@@ -131,7 +131,7 @@ public:
 
 class DirectFileReader : public IFileReader
 {
-  static const int OPEN_FLAGS = O_RDWR | O_DIRECT;
+  static const int OPEN_FLAGS = O_RDWR;
   static const int OPEN_MODE = S_IRWXU;
 public:
   static const int64_t DEFAULT_ALIGN_SIZE = 4L * 1024L;
@@ -196,7 +196,7 @@ private:
 class DirectFileAppender : public IFileAppender
 {
   static const int64_t DEBUG_MAGIC = 0x1a2b3c4d;
-  static const int NORMAL_FLAGS = O_RDWR | O_DIRECT;
+  static const int NORMAL_FLAGS = O_RDWR;
   static const int CREAT_FLAGS = O_CREAT;
   static const int TRUNC_FLAGS = O_TRUNC;
   static const int EXCL_FLAGS = O_EXCL;
@@ -508,7 +508,7 @@ class ObFileAsyncAppender : public ObIFileAppender, ObIWaiter
               const bool is_excl) : flag(O_RDWR),
                     mode(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
     {
-      flag |= dio       ? O_DIRECT  : 0;
+      // flag |= dio       ? O_DIRECT  : 0;
       flag |= is_create ? O_CREAT   : 0;
       flag |= is_trunc  ? O_TRUNC   : 0;
       flag |= is_excl   ? O_EXCL    : 0;

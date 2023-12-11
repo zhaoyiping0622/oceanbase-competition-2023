@@ -810,7 +810,7 @@ int ObStorageFileWriter::open(const common::ObString &uri, common::ObObjectStora
   const char *TMP_NAME_FORMAT = "%s.tmp.%ld";
   ObStorageFileUtil util;
   const int64_t cur_ts = ObTimeUtil::current_time();
-  int flags = O_CREAT | O_WRONLY | O_TRUNC | O_EXCL | O_SYNC;
+  int flags = O_CREAT | O_WRONLY | O_TRUNC | O_EXCL;
 
   if (is_opened_) {
     ret = OB_INIT_TWICE;
@@ -956,17 +956,17 @@ int ObStorageFileAppender::get_open_flag_and_mode_(int &flag, bool &need_lock)
   need_lock = false;
   switch (open_mode_) {
   case StorageOpenMode::CREATE_OPEN_LOCK:
-    flag = O_CREAT | O_RDWR | O_APPEND | O_SYNC;
+    flag = O_CREAT | O_RDWR | O_APPEND;
     need_lock = true;
     break;
   case StorageOpenMode::EXCLUSIVE_CREATE:
-    flag = O_CREAT | O_RDWR | O_APPEND | O_EXCL | O_SYNC;
+    flag = O_CREAT | O_RDWR | O_APPEND | O_EXCL;
     break;
   case StorageOpenMode::ONLY_OPEN_UNLOCK:
-    flag = O_RDWR | O_APPEND | O_SYNC;
+    flag = O_RDWR | O_APPEND;
     break;
   case StorageOpenMode::CREATE_OPEN_NOLOCK:
-    flag = O_CREAT | O_RDWR | O_SYNC;
+    flag = O_CREAT | O_RDWR;
     need_lock = false;
     break;
   default:

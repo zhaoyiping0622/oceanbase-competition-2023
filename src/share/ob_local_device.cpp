@@ -1441,8 +1441,8 @@ int ObLocalDevice::open_block_file(
     SHARE_LOG(WARN, "Fail to get block file size", K(ret), K(block_size), K(file_size),
         K(adjust_file_size), K(disk_percentage));
   } else {
-    int open_flag = is_exist ? O_DIRECT | O_RDWR | O_LARGEFILE
-                          : O_CREAT | O_EXCL | O_DIRECT | O_RDWR | O_LARGEFILE;
+    int open_flag = is_exist ? O_RDWR | O_LARGEFILE
+                          : O_CREAT | O_EXCL | O_RDWR | O_LARGEFILE;
     if ((block_fd_ = ::open(store_path_, open_flag, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
       ret = OB_IO_ERROR;
       SHARE_LOG(ERROR, "open file error", K(ret), K(store_path_), K(errno), KERRMSG);
