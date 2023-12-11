@@ -78,7 +78,7 @@ private:
   static const int LINE_TERMINATOR_LEN;
   static constexpr int LINE_RESERVED_LEN = 4;
   static constexpr int READ_FLAGS = O_RDONLY;
-  static constexpr int WRITE_FLAGS = O_WRONLY | O_SYNC | O_CREAT | O_TRUNC;
+  static constexpr int WRITE_FLAGS = O_WRONLY | O_CREAT | O_TRUNC;
   static constexpr int FILE_OPEN_MODE = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 };
 

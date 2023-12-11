@@ -34,7 +34,7 @@ public:
 class ObLogDataWriter
 {
 public:
-  static const int OPEN_FLAG = O_WRONLY | O_DIRECT;
+  static const int OPEN_FLAG = O_WRONLY;
   static const int OPEN_MODE = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
   static const int CREATE_FLAG = OPEN_FLAG | O_CREAT;
   class AppendBuffer

@@ -442,7 +442,7 @@ int ObLogFileReader2::open_fd(const ObLogReadFdKey &fd_key, common::ObIOFd &ret_
   if (OB_UNLIKELY(!fd_key.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(fd_key));
-  } else if (OB_FAIL(ObLogFileHandler::open(fd_key.path_, O_RDONLY | O_DIRECT, 0, ret_io_fd))) {
+  } else if (OB_FAIL(ObLogFileHandler::open(fd_key.path_, O_RDONLY, 0, ret_io_fd))) {
     LOG_WARN("failed to open file", K(ret), K(fd_key));
   } else if (OB_UNLIKELY(!ret_io_fd.is_normal_file())) {
     ret = OB_ERR_UNEXPECTED;

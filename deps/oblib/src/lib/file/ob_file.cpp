@@ -400,10 +400,10 @@ int BufferFileAppender::fsync()
     _OB_LOG(WARN, "file has not been open");
     ret = OB_ERROR;
   } else if (OB_SUCCESS == (ret = buffer_sync_())) {
-    if (0 != ::fsync(fd_)) {
-      _OB_LOG(WARN, "fsync fail fd=%d errno=%u", fd_, errno);
-      ret = OB_IO_ERROR;
-    }
+    // if (0 != ::fsync(fd_)) {
+    //   _OB_LOG(WARN, "fsync fail fd=%d errno=%u", fd_, errno);
+    //   ret = OB_IO_ERROR;
+    // }
   }
   return ret;
 }
@@ -593,10 +593,10 @@ int DirectFileAppender::fsync()
     }
   }
   if (OB_SUCC(ret)) {
-    if (0 != ::fsync(fd_)) {
-      _OB_LOG(WARN, "fsync fail fd=%d errno=%u", fd_, errno);
-      ret = OB_IO_ERROR;
-    }
+    // if (0 != ::fsync(fd_)) {
+    //   _OB_LOG(WARN, "fsync fail fd=%d errno=%u", fd_, errno);
+    //   ret = OB_IO_ERROR;
+    // }
   }
   return ret;
 }
@@ -1346,7 +1346,7 @@ int ObFileAppender::fsync()
   if (NULL == file_) {
     ret = OB_ERROR;
   } else {
-    ret = file_->fsync();
+    // ret = file_->fsync();
   }
   return ret;
 }
@@ -1498,7 +1498,7 @@ int ObFileAsyncAppender::append(const void *buf,
     }
     if (OB_SUCCESS == ret
         && is_fsync) {
-      ret = fsync();
+      // ret = fsync();
     }
   }
   return ret;

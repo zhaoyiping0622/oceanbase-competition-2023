@@ -546,7 +546,7 @@ int ObLogDataWriter::check_eof_after_log_cursor(const ObLogCursor &cursor)
              || fname_len >= (int64_t)sizeof(fname)) {
     ret = OB_BUF_NOT_ENOUGH;
     SHARE_LOG(ERROR, "gen fname fail", K(sizeof(fname)), KCSTRING(log_dir_), K(cursor.file_id_));
-  } else if ((fd = open(fname, O_RDONLY | O_DIRECT | O_CREAT, OPEN_MODE)) < 0) {
+  } else if ((fd = open(fname, O_RDONLY | O_CREAT, OPEN_MODE)) < 0) {
     ret = OB_IO_ERROR;
     SHARE_LOG(ERROR, "open file failed", KCSTRING(fname), KERRMSG);
   } else if (common::get_file_size(fd) == cursor.offset_) {

@@ -30,9 +30,9 @@ enum ObRedoLogType
 class ObLogDefinition
 {
 public:
-  static constexpr int LOG_READ_FLAG = O_RDONLY | O_DIRECT;
-  static constexpr int LOG_WRITE_FLAG = O_RDWR | O_DIRECT | O_SYNC | O_CREAT;
-  static constexpr int LOG_APPEND_FLAG = O_RDWR | O_DIRECT | O_SYNC | O_CREAT | O_APPEND;
+  static constexpr int LOG_READ_FLAG = O_RDONLY;
+  static constexpr int LOG_WRITE_FLAG = O_RDWR | O_CREAT;
+  static constexpr int LOG_APPEND_FLAG = O_RDWR | O_CREAT | O_APPEND;
   static constexpr int FILE_OPEN_MODE = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
   static constexpr mode_t DIR_CREATE_MODE = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
   static constexpr int DEFAULT_IO_RETRY_CNT = 3;
