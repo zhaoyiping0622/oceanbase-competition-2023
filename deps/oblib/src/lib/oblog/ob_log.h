@@ -561,7 +561,13 @@ public:
 #endif
 
   //@brief Check whether the level to print.
-  bool __attribute__((weak, noinline, cold)) need_to_print(const int32_t level) { return (level <= get_log_level()); }
+  bool __attribute__((weak, noinline, cold)) need_to_print(const int32_t level) {
+#ifndef ZYP
+    return false;
+#else
+    return (level <= get_log_level()); 
+#endif
+  }
   //@brief Check whether the level of the par-module to print.
   bool __attribute__((weak, noinline, cold)) need_to_print(const uint64_t par_mod_id, const int32_t level);
   //@brief Check whether the level of the sub-module to print.
@@ -1327,6 +1333,7 @@ void OB_PRINT(const char *mod_name, const int32_t level, const char *file, const
               const char *, /* placeholder */
               Args const && ... args)
 {
+  return;
   int ret = OB_SUCCESS;
   if (OB_LOG_LEVEL_ERROR == level) {
     OB_LOGGER.issue_dba_error(errcode, file, line, info_string);

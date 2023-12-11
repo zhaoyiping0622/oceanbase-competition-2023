@@ -250,7 +250,7 @@ void zyp_broadcast_sys_table_schemas_bootstrap(obrpc::ObSrvRpcProxy* rpc_proxy, 
 }
 
 void zyp_create_table_async(obrpc::ObSrvRpcProxy* rpc_proxy,oceanbase::obrpc::ObServerInfoList rs_list,  ObDDLService* ddl_service, const int64_t tenant_id) {
-  zyp_real_sleep(6);
+  zyp_real_sleep(35);
   ObArray<ObTableSchema> tables;
   int ret = OB_SUCCESS;
   oceanbase::lib::set_thread_name("not_key_schema_thread");
